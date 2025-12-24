@@ -2678,9 +2678,6 @@
             // Pan to the selected facility
             map.setView([lat, lon], currentFacilityType === '遠足徑' ? 13 : 16);
 
-            // Add to map
-            selectedFacility.addTo(map);
-
             // Show notification
             showNotification(`已選取: ${facility.name} (${facility.type})`);
         }
