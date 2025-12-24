@@ -1,0 +1,2672 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>體育設施查詢系統</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft JhengHei', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* 修復彈出視窗大小問題 */
+        .leaflet-popup-content {
+            overflow-y: auto;
+            max-height: 300px;
+            min-width: 200px;
+            padding: 10px;
+        }
+
+        /* 手機設備上的彈出視窗優化 */
+        @media (max-width: 768px) {
+            .leaflet-popup-content {
+                max-height: 200px;
+                min-width: 150px;
+                font-size: 0.9rem;
+            }
+
+            .leaflet-popup {
+                max-width: 250px !important;
+            }
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #f5f5f5;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c6c91, #2c3e50);
+            color: white;
+            padding: 15px 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header h1 i {
+            color: #ffcc00;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            max-width: 800px;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Accordion Styles */
+        .accordion-panel {
+            width: 400px;
+            background-color: white;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+            z-index: 500;
+            transition: transform 0.3s ease;
+        }
+
+        .accordion {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .accordion-item {
+            margin-bottom: 15px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e0e0e0;
+        }
+
+        .accordion-header {
+            background-color: #2c6c91;
+            color: white;
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+
+        .accordion-header:hover {
+            background-color: #1a5c7a;
+        }
+
+        .accordion-header.active {
+            background-color: #2c3e50;
+        }
+
+        .accordion-content {
+            background-color: white;
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .accordion-content.active {
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        /* Multi-level Accordion Styles */
+        .multi-level-accordion {
+            margin-bottom: 10px;
+        }
+
+        .level-1-header {
+            background-color: #4a90e2;
+            color: white;
+            padding: 12px 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            transition: background-color 0.2s;
+        }
+
+        .level-1-header:hover {
+            background-color: #3a80d2;
+        }
+
+        .level-1-header.active {
+            background-color: #2c6c91;
+        }
+
+        .level-1-content {
+            background-color: #f8f9fa;
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .level-1-content.active {
+            padding: 15px;
+            overflow-y: auto;
+            min-height: 200px;
+        }
+
+        .level-2-header {
+            background-color: #5cb85c;
+            color: white;
+            padding: 10px 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            margin-top: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .level-2-header:hover {
+            background-color: #4cae4c;
+        }
+
+        .level-2-content {
+            background-color: #e8f5e8;
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .level-2-content.active {
+            padding: 12px;
+            overflow-y: auto;
+            min-height: fit-content;
+        }
+
+        .level-3-header {
+            background-color: #f0ad4e;
+            color: white;
+            padding: 8px 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            border-radius: 3px;
+            margin-bottom: 5px;
+            margin-top: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .level-3-header:hover {
+            background-color: #eea236;
+        }
+
+        .level-3-content {
+            background-color: #fcf8e3;
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            border-radius: 0 0 3px 3px;
+        }
+
+        .level-3-content.active {
+            padding: 10px;
+            overflow-y: auto;
+            min-height: 200px;
+        }
+
+        .level-4-content {
+            background-color: #fcf8e3;
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            border-radius: 0 0 3px 3px;
+        }
+
+        .level-4-content.active {
+            padding: 10px;
+            overflow-y: auto;
+            min-height: 200px;
+        }
+
+        .level-5-content {
+            background-color: #fcf8e3;
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            border-radius: 0 0 3px 3px;
+        }
+
+        .level-5-content.active {
+            padding: 10px;
+            overflow-y: auto;
+            min-height: 200px;
+        }
+
+        /* Facility Items */
+        .facility-item {
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .facility-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #4a90e2;
+        }
+
+        .facility-item.active {
+            border-color: #ffcc00;
+            background-color: #fff9e6;
+        }
+
+        .facility-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .facility-details {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .facility-detail-item {
+            margin-bottom: 5px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .facility-detail-item i {
+            color: #2c6c91;
+            margin-right: 8px;
+            margin-top: 3px;
+            width: 16px;
+            flex-shrink: 0;
+        }
+
+        .facility-detail-text {
+            flex: 1;
+            word-break: break-word;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .btn {
+            background-color: #2c6c91;
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            background-color: #1a5c7a;
+        }
+
+        .btn.active {
+            background-color: #2c3e50;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-success {
+            background-color: #27ae60;
+        }
+
+        .btn-success:hover {
+            background-color: #219653;
+        }
+
+        .info-box {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2c6c91;
+            font-size: 0.9rem;
+        }
+
+        .info-box h4 {
+            margin-bottom: 8px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Search Box */
+        .search-box {
+            margin-bottom: 15px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #2c6c91;
+        }
+
+        /* Map Styles */
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Footer Styles */
+        .footer {
+            background-color: #2c3e50;
+            color: white;
+            padding: 6px 20px;
+            text-align: center;
+            font-size: 0.85rem;
+            border-top: 1px solid #4a6491;
+            z-index: 1000;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 15px;
+        }
+
+        .footer-links a {
+            color: #ecf0f1;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: #3498db;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .accordion-panel {
+                width: 100%;
+                height: 40vh;
+                border-right: none;
+                border-bottom: 1px solid #ddd;
+            }
+
+            .header h1 {
+                font-size: 1.3rem;
+            }
+
+            .header p {
+                font-size: 0.85rem;
+            }
+
+            .accordion-header {
+                padding: 12px 15px;
+                font-size: 0.95rem;
+            }
+
+            .btn {
+                padding: 10px 15px;
+                font-size: 0.95rem;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+
+            .footer-links {
+                justify-content: center;
+            }
+
+            .multi-level-accordion {
+                font-size: 0.9rem;
+            }
+
+            .level-1-header,
+            .level-2-header,
+            .level-3-header {
+                padding: 10px 12px;
+            }
+        }
+
+        /* For very small screens like iPhone SE */
+        @media (max-width: 375px) {
+            .header {
+                padding: 12px 15px;
+            }
+
+            .header h1 {
+                font-size: 1.2rem;
+            }
+
+            .header p {
+                font-size: 0.8rem;
+            }
+
+            .accordion {
+                padding: 10px;
+            }
+
+            .accordion-header {
+                padding: 10px 12px;
+                font-size: 0.9rem;
+            }
+
+            .accordion-content.active {
+                padding: 15px;
+            }
+
+            .btn {
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+
+            .footer {
+                padding: 10px 15px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Stats Display */
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding: 10px 0;
+            border-top: 1px dashed #ddd;
+            font-size: 0.9rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 1.2rem;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        /* Toggle panel button for mobile */
+        .panel-toggle {
+            display: none;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .panel-toggle {
+                display: block;
+            }
+
+            .accordion-panel.collapsed {
+                transform: translateY(-100%);
+                height: 0;
+                overflow: hidden;
+            }
+        }
+
+        /* Legend */
+        .legend {
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            border-radius: 3px;
+        }
+
+        /* Loading indicator */
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            text-align: center;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2c6c91;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Coordinates display */
+        .coordinates {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 0.85rem;
+            z-index: 500;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Counter badges */
+        .counter-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 12px;
+            padding: 2px 10px;
+            font-size: 0.8rem;
+            margin-left: 8px;
+        }
+
+        .facility-counter {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #4a90e2;
+            color: white;
+            border-radius: 10px;
+            padding: 1px 8px;
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+
+        /* Facility type selector */
+        .facility-selector {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .facility-type-btn {
+            background-color: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            color: #333;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 70px;
+        }
+
+        .facility-type-btn:hover {
+            border-color: #2c6c91;
+            background-color: #e8f4ff;
+        }
+
+        .facility-type-btn.active {
+            background-color: #2c6c91;
+            color: white;
+            border-color: #2c6c91;
+        }
+
+        .facility-type-btn i {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .facility-type-name {
+            font-size: 0.85rem;
+        }
+
+        /* Error message */
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid #f5c6cb;
+        }
+
+        /* Cache status */
+        .cache-status {
+            font-size: 0.8rem;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+            padding: 5px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1><i class="fas fa-futbol"></i> 體育設施查詢系統</h1>
+        <p>查詢全港各區體育設施資訊，包括足球場、網球場、游泳池、健身室、羽毛球場及遠足徑等各類運動設施</p>
+    </div>
+
+    <div class="container">
+        <button class="panel-toggle" id="panelToggle" style="display:none">
+            <i class="fas fa-bars"></i> 控制面板
+        </button>
+
+        <div class="accordion-panel" id="accordionPanel">
+            <div class="accordion">
+                <!-- Facility Type Selector -->
+                <div class="accordion-item">
+                    <div class="accordion-header active" id="headerFacilityType">
+                        <span><i class="fas fa-futbol"></i> 體育設施類型</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="accordion-content active" id="contentFacilityType">
+                        <div class="info-box">
+                            <h4><i class="fas fa-info-circle"></i> 使用說明</h4>
+                            <p>1. 選擇下方體育設施類型</p>
+                            <p>2. 數據載入後展開層級查看設施</p>
+                            <p>3. 點擊設施查看詳細資訊及地圖位置</p>
+                            <p>4. 使用搜尋框快速查找特定設施</p>
+                        </div>
+
+                        <div class="facility-selector" id="facilitySelector">
+                            <button class="facility-type-btn"
+                                data-url="https://portal.csdi.gov.hk/server/services/common/afcd_rcd_1665568199103_4360/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=Hiking_Trails&outputFormat=geojson"
+                                data-component="遠足徑">
+                                <i class="fas fa-hiking"></i>
+                                <span class="facility-type-name">遠足徑</span>
+                            </button>
+                            <button class="facility-type-btn"
+                                data-url="https://www.lcsd.gov.hk/datagovhk/facility/facility-swimming-pools.json"
+                                data-component="游泳池">
+                                <i class="fas fa-swimmer"></i>
+                                <span class="facility-type-name">游泳池</span>
+                            </button>
+                            <button class="facility-type-btn"
+                                data-url="https://www.lcsd.gov.hk/datagovhk/facility/facility-ctg.json"
+                                data-component="單車">
+                                <i class="fas fa-bicycle"></i>
+                                <span class="facility-type-name">單車設施</span>
+                            </button>
+                            <button class="facility-type-btn"
+                                data-url="https://data.smartplay.lcsd.gov.hk/rest/cms/api/v1/publ/contents/open-data/badminton/file"
+                                data-component="羽毛球場">
+                                <i class="fas fa-table-tennis"></i>
+                                <span class="facility-type-name">羽毛球場</span>
+                            </button>
+                            <button class="facility-type-btn active"
+                                data-url="https://www.lcsd.gov.hk/datagovhk/facility/facility-sp11atp.json"
+                                data-component="十一人足球場">
+                                <i class="fas fa-futbol"></i>
+                                <span class="facility-type-name">十一人足球場</span>
+                            </button>
+                            <button class="facility-type-btn"
+                                data-url="https://www.lcsd.gov.hk/datagovhk/facility/facility-hssp7.json"
+                                data-component="七人硬地足球場">
+                                <i class="fas fa-futbol"></i>
+                                <span class="facility-type-name">七人硬地足球場</span>
+                            </button>
+                            <button class="facility-type-btn"
+                                data-url="https://www.lcsd.gov.hk/datagovhk/facility/facility-hssp5.json"
+                                data-component="五人硬地足球場">
+                                <i class="fas fa-futbol"></i>
+                                <span class="facility-type-name">五人硬地足球場</span>
+                            </button>
+                            <button class="facility-type-btn"
+                                data-url="https://portal.csdi.gov.hk/server/services/common/lcsd_rcd_1629267205215_11128/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=geodatastore&outputFormat=geojson"
+                                data-component="運動場">
+                                <i class="fas fa-running"></i>
+                                <span class="facility-type-name">運動場</span>
+                            </button>
+                            <button class="facility-type-btn"
+                                data-url="https://www.lcsd.gov.hk/datagovhk/facility/facility-fitrm.json"
+                                data-component="健身室">
+                                <i class="fas fa-dumbbell"></i>
+                                <span class="facility-type-name">健身室</span>
+                            </button>
+                            <button class="facility-type-btn"
+                                data-url="https://portal.csdi.gov.hk/server/services/common/lcsd_rcd_1670383274728_87541/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=geotagging&outputFormat=geojson"
+                                data-component="射箭場">
+                                <i class="fas fa-bullseye"></i>
+                                <span class="facility-type-name">射箭場</span>
+                            </button>
+                            <button class="facility-type-btn"
+                                data-url="https://www.lcsd.gov.hk/datagovhk/facility/facility-tc.json"
+                                data-component="網球場">
+                                <i class="fas fa-table-tennis"></i>
+                                <span class="facility-type-name">網球場</span>
+                            </button>
+                            <button class="facility-type-btn"
+                                data-url="https://portal.csdi.gov.hk/server/services/common/lcsd_rcd_1629267205215_7366/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=geodatastore&outputFormat=geojson"
+                                data-component="壁球場">
+                                <i class="fas fa-square"></i>
+                                <span class="facility-type-name">壁球場</span>
+                            </button>
+                            <button class="facility-type-btn"
+                                data-url="https://portal.csdi.gov.hk/server/services/common/lcsd_rcd_1670388869524_52981/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=geotagging&outputFormat=geojson"
+                                data-component="網球練習場">
+                                <i class="fas fa-table-tennis"></i>
+                                <span class="facility-type-name">網球練習場</span>
+                            </button>
+                        </div>
+
+                        <div class="stats">
+                            <div class="stat-item">
+                                <div class="stat-value" id="totalFacilities">0</div>
+                                <div class="stat-label">總數</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="totalDistricts">0</div>
+                                <div class="stat-label">地區/類別</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="visibleFacilities">0</div>
+                                <div class="stat-label">顯示中</div>
+                            </div>
+                        </div>
+
+                        <div class="cache-status" id="cacheStatus">
+                            快取狀態: 未使用
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Facilities List -->
+                <div class="accordion-item">
+                    <div class="accordion-header" id="headerFacilities">
+                        <span><i class="fas fa-list"></i> 體育設施列表</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="accordion-content" id="contentFacilities">
+                        <div class="search-box">
+                            <input type="text" id="searchInput" class="search-input" placeholder="搜尋設施名稱、地址或地區...">
+                        </div>
+
+                        <div id="facilitiesList">
+                            <!-- Facilities will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map Settings -->
+                <div class="accordion-item">
+                    <div class="accordion-header" id="headerSettings">
+                        <span><i class="fas fa-cog"></i> 地圖設定</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="accordion-content" id="contentSettings">
+                        <div class="control-group">
+                            <label><i class="fas fa-map"></i> 底圖樣式</label>
+                            <select id="baseMapSelect" class="btn" style="padding: 10px;">
+                                <option value="OpenStreetMap">OpenStreetMap</option>
+                                <option value="地形圖">地形圖</option>
+                                <option value="衛星圖像">衛星圖像</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <label><i class="fas fa-search"></i> 縮放級別</label>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <button class="btn" id="zoomInBtn" style="width: auto; flex: 1;">
+                                    <i class="fas fa-search-plus"></i> 放大
+                                </button>
+                                <button class="btn" id="zoomOutBtn" style="width: auto; flex: 1;">
+                                    <i class="fas fa-search-minus"></i> 縮小
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <label><i class="fas fa-location-arrow"></i> 重置視圖</label>
+                            <button class="btn" id="resetViewBtn">
+                                <i class="fas fa-globe-asia"></i> 重置至香港全境
+                            </button>
+                        </div>
+
+                        <div class="legend">
+                            <label><i class="fas fa-layer-group"></i> 圖例</label>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #ff6b6b;"></div>
+                                <span>體育設施</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #4a90e2;"></div>
+                                <span>已選取設施</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #5cb85c;"></div>
+                                <span>分類級別 1</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #f0ad4e;"></div>
+                                <span>分類級別 2</span>
+                            </div>
+                        </div>
+
+                        <div class="info-box">
+                            <h4><i class="fas fa-database"></i> 數據管理</h4>
+                            <button class="btn" id="clearCacheBtn" style="background-color: #e74c3c;">
+                                <i class="fas fa-trash"></i> 清除快取數據
+                            </button>
+                            <button class="btn" id="refreshDataBtn" style="background-color: #27ae60;">
+                                <i class="fas fa-sync"></i> 重新載入當前數據
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner"></div>
+                <p id="loadingText">正在載入體育設施數據...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-copyright">
+                &copy; 2024 體育設施查詢系統<br />數據由康樂及文化事務署及漁農自然護理署提供
+            </div>
+        </div>
+    </footer>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // Configuration
+        const PROXY_URL = 'https://cors-anywhere.herokuapp.com/';
+        const CACHE_PREFIX = 'sports_facility_';
+        const CACHE_EXPIRY_HOURS = 24;
+
+        // Initialize variables
+        let map;
+        let facilitiesLayer;
+        let selectedFacility = null;
+        let allFacilities = [];
+        let currentFacilityType = null;
+        let currentUrl = null;
+        let groupedData = {};
+
+        // Cache management
+        const dataCache = {
+            set: function (key, data) {
+                const cacheItem = {
+                    data: data,
+                    timestamp: Date.now(),
+                    expiry: CACHE_EXPIRY_HOURS * 60 * 60 * 1000
+                };
+                try {
+                    localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(cacheItem));
+                    updateCacheStatus();
+                } catch (e) {
+                    console.warn('LocalStorage not available for caching');
+                }
+            },
+
+            get: function (key) {
+                try {
+                    const cached = localStorage.getItem(CACHE_PREFIX + key);
+                    if (!cached) return null;
+
+                    const cacheItem = JSON.parse(cached);
+                    const now = Date.now();
+
+                    // Check if cache is expired
+                    if (now - cacheItem.timestamp > cacheItem.expiry) {
+                        localStorage.removeItem(CACHE_PREFIX + key);
+                        return null;
+                    }
+
+                    return cacheItem.data;
+                } catch (e) {
+                    return null;
+                }
+            },
+
+            clear: function () {
+                try {
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key.startsWith(CACHE_PREFIX)) {
+                            localStorage.removeItem(key);
+                        }
+                    }
+                    updateCacheStatus();
+                    showNotification('快取數據已清除');
+                } catch (e) {
+                    console.warn('Failed to clear cache');
+                }
+            },
+
+            getStats: function () {
+                try {
+                    let count = 0;
+                    let totalSize = 0;
+
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key.startsWith(CACHE_PREFIX)) {
+                            count++;
+                            totalSize += localStorage.getItem(key).length;
+                        }
+                    }
+
+                    return {
+                        count: count,
+                        size: (totalSize / 1024).toFixed(2) + ' KB'
+                    };
+                } catch (e) {
+                    return { count: 0, size: '0 KB' };
+                }
+            }
+        };
+
+        // Facility type configuration - 新增羽毛球場和遠足徑的配置
+        const FACILITY_CONFIG = {
+            // JSON array format APIs
+            '十一人足球場': {
+                url: 'https://www.lcsd.gov.hk/datagovhk/facility/facility-sp11atp.json',
+                grouping: 'district-name',
+                essentialAttributes: ['GIHS', 'District_cn', 'Name_cn', 'Latitude', 'Longitude']
+            },
+            '五人硬地足球場': {
+                url: 'https://www.lcsd.gov.hk/datagovhk/facility/facility-hssp5.json',
+                grouping: 'district-name',
+                essentialAttributes: ['GIHS', 'District_cn', 'Name_cn', 'Latitude', 'Longitude']
+            },
+            '網球場': {
+                url: 'https://www.lcsd.gov.hk/datagovhk/facility/facility-tc.json',
+                grouping: 'district-name',
+                essentialAttributes: ['GIHS', 'District_cn', 'Name_cn', 'Latitude', 'Longitude']
+            },
+            '健身室': {
+                url: 'https://www.lcsd.gov.hk/datagovhk/facility/facility-fitrm.json',
+                grouping: 'district-name',
+                essentialAttributes: ['GIHS', 'District_cn', 'Name_cn', 'Latitude', 'Longitude']
+            },
+            '七人硬地足球場': {
+                url: 'https://www.lcsd.gov.hk/datagovhk/facility/facility-hssp7.json',
+                grouping: 'district-name',
+                essentialAttributes: ['GIHS', 'District_cn', 'Name_cn', 'Latitude', 'Longitude']
+            },
+            '單車': {
+                url: 'https://www.lcsd.gov.hk/datagovhk/facility/facility-ctg.json',
+                grouping: 'district-name',
+                essentialAttributes: ['GIHS', 'District_cn', 'Name_cn', 'Latitude', 'Longitude']
+            },
+
+            // 新增的羽毛球場配置
+            '羽毛球場': {
+                url: 'https://data.smartplay.lcsd.gov.hk/rest/cms/api/v1/publ/contents/open-data/badminton/file',
+                grouping: 'badminton-grouping',
+                essentialAttributes: ['GIHS', 'District_Name_TC', 'Venue_Name_TC', 'Facility_Type_Name_TC', 'Facility_Location_Name_TC']
+            },
+
+            // 新增的遠足徑配置
+            '遠足徑': {
+                url: 'https://portal.csdi.gov.hk/server/services/common/afcd_rcd_1665568199103_4360/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=Hiking_Trails&outputFormat=geojson',
+                grouping: 'hiking-trails-grouping',
+                essentialAttributes: ['OBJECTID', 'Region_Ch', 'C_NAME', 'Trail_name_Ch', 'Type_Ch', 'Difficult_Ch']
+            },
+
+            // GeoJSON format APIs
+            '運動場': {
+                url: 'https://portal.csdi.gov.hk/server/services/common/lcsd_rcd_1629267205215_11128/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=geodatastore&outputFormat=geojson',
+                grouping: 'dataset-nsearch01-search01-name',
+                essentialAttributes: ['DATASET_TC', 'NSEARCH01_TC', 'SEARCH01_TC', 'NAME_TC']
+            },
+            '游泳池': {
+                url: 'https://www.lcsd.gov.hk/datagovhk/facility/facility-swimming-pools.json',
+                grouping: 'dataset-search02-search01-name',
+                essentialAttributes: ['DATASET_TC', 'SEARCH02_TC', 'SEARCH01_TC', 'NAME_TC']
+            },
+            '網球練習場': {
+                url: 'https://portal.csdi.gov.hk/server/services/common/lcsd_rcd_1670388869524_52981/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=geotagging&outputFormat=geojson',
+                grouping: 'district-name',
+                essentialAttributes: ['GIHS', 'District_cn', 'Name_cn']
+            },
+            '射箭場': {
+                url: 'https://portal.csdi.gov.hk/server/services/common/lcsd_rcd_1670383274728_87541/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=geotagging&outputFormat=geojson',
+                grouping: 'district-name',
+                essentialAttributes: ['GIHS', 'District_cn', 'Name_cn']
+            },
+            '壁球場': {
+                url: 'https://portal.csdi.gov.hk/server/services/common/lcsd_rcd_1629267205215_7366/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=geodatastore&outputFormat=geojson',
+                grouping: 'dataset-search01-name',
+                essentialAttributes: ['OBJECTID', 'DATASET_TC', 'SEARCH01_TC', 'NAME_TC']
+            }
+        };
+
+        // Add base layers
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors'
+        });
+
+        const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+        });
+
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        });
+
+        const baseLayers = {
+            "OpenStreetMap": osmLayer,
+            "地形圖": topoLayer,
+            "衛星圖像": satelliteLayer
+        };
+        var currentTileLayer = baseLayers["OpenStreetMap"];
+
+        // Initialize map when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function () {
+            initMap();
+            setupAccordion();
+            setupEventListeners();
+            updateCacheStatus();
+
+            // Set default facility type and load data
+            const defaultBtn = document.querySelector('.facility-type-btn.active');
+            if (defaultBtn) {
+                const component = defaultBtn.dataset.component;
+                loadFacilityData(component);
+            }
+
+            // Handle mobile panel toggle
+            const panelToggle = document.getElementById('panelToggle');
+            const accordionPanel = document.getElementById('accordionPanel');
+
+            panelToggle.addEventListener('click', function () {
+                accordionPanel.classList.toggle('collapsed');
+                panelToggle.innerHTML = accordionPanel.classList.contains('collapsed')
+                    ? '<i class="fas fa-bars"></i> 顯示控制面板'
+                    : '<i class="fas fa-bars"></i> 隱藏控制面板';
+            });
+        });
+
+        // Initialize the map
+        function initMap() {
+            // Set initial view to Hong Kong
+            map = L.map('map', { zoomControl: false }).setView([22.3193, 114.1694], 11);
+
+            // Add default layer
+            currentTileLayer.addTo(map);
+        }
+
+        // Setup accordion functionality
+        function setupAccordion() {
+            const accordionHeaders = document.querySelectorAll('.accordion-header');
+
+            accordionHeaders.forEach(header => {
+                header.addEventListener('click', function (e) {
+                    const content = this.nextElementSibling;
+                    const isActive = this.classList.contains('active');
+
+                    // Close all accordion items
+                    accordionHeaders.forEach(h => {
+                        h.classList.remove('active');
+                        h.querySelector('.fa-chevron-down').style.transform = 'rotate(0deg)';
+                    });
+
+                    document.querySelectorAll('.accordion-content').forEach(c => {
+                        c.classList.remove('active');
+                    });
+
+                    // Open clicked item if it was not active
+                    if (!isActive) {
+                        this.classList.add('active');
+                        content.classList.add('active');
+                        this.querySelector('.fa-chevron-down').style.transform = 'rotate(180deg)';
+                    }
+
+                    map.invalidateSize();
+                });
+            });
+        }
+
+        // Setup button event listeners
+        function setupEventListeners() {
+            // Map controls
+            document.getElementById('zoomInBtn').addEventListener('click', function () {
+                map.zoomIn();
+            });
+
+            document.getElementById('zoomOutBtn').addEventListener('click', function () {
+                map.zoomOut();
+            });
+
+            document.getElementById('resetViewBtn').addEventListener('click', function () {
+                map.setView([22.3193, 114.1694], 11);
+            });
+
+            // Base map selector
+            document.getElementById('baseMapSelect').addEventListener('change', function (e) {
+                // Remove current layer
+                map.removeLayer(currentTileLayer);
+
+                // Add new layer
+                currentTileLayer = baseLayers[e.target.value];
+                currentTileLayer.addTo(map);
+            });
+
+            // Search input
+            document.getElementById('searchInput').addEventListener('input', function (e) {
+                filterFacilities(e.target.value);
+            });
+
+            // Facility type selector
+            document.querySelectorAll('.facility-type-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    // Remove active class from all buttons
+                    document.querySelectorAll('.facility-type-btn').forEach(b => {
+                        b.classList.remove('active');
+                    });
+
+                    // Add active class to clicked button
+                    this.classList.add('active');
+
+                    // Load data for selected facility type
+                    const component = this.dataset.component;
+                    loadFacilityData(component);
+                });
+            });
+
+            // Data management buttons
+            document.getElementById('clearCacheBtn').addEventListener('click', function () {
+                if (confirm('確定要清除所有快取數據嗎？')) {
+                    dataCache.clear();
+                }
+            });
+
+            document.getElementById('refreshDataBtn').addEventListener('click', function () {
+                if (currentFacilityType) {
+                    // Force reload by removing from cache
+                    const cacheKey = currentFacilityType;
+                    try {
+                        localStorage.removeItem(CACHE_PREFIX + cacheKey);
+                    } catch (e) { }
+                    loadFacilityData(currentFacilityType, true);
+                }
+            });
+        }
+
+        // Update cache status display
+        function updateCacheStatus() {
+            const stats = dataCache.getStats();
+            const statusElement = document.getElementById('cacheStatus');
+            statusElement.textContent = `快取: ${stats.count} 個項目 (${stats.size})`;
+        }
+
+        // Load facility data from API
+        async function loadFacilityData(facilityType, forceRefresh = false) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const loadingText = document.getElementById('loadingText');
+
+            loadingText.textContent = `正在載入${facilityType}數據...`;
+            loadingIndicator.style.display = 'block';
+
+            const config = FACILITY_CONFIG[facilityType];
+            if (!config) {
+                showNotification(`無法找到 ${facilityType} 的配置`);
+                loadingIndicator.style.display = 'none';
+                return;
+            }
+
+            currentFacilityType = facilityType;
+            currentUrl = config.url;
+
+            try {
+                // Check cache first (unless force refresh)
+                let data;
+                const cacheKey = facilityType;
+
+                if (!forceRefresh) {
+                    data = dataCache.get(cacheKey);
+                    if (data) {
+                        console.log(`Using cached data for ${facilityType}`);
+                        processFacilityData(data, facilityType, config);
+                        loadingIndicator.style.display = 'none';
+                        showNotification(`已載入快取的 ${facilityType} 數據`);
+                        return;
+                    }
+                }
+
+                // Fetch from API
+                console.log(`Fetching from: ${config.url}`);
+
+                let response;
+
+                // 使用proxy處理CORS問題
+                try {
+                    const proxyUrl = PROXY_URL + config.url;
+                    response = await fetch(proxyUrl, {
+                        headers: {
+                            'Origin': window.location.origin,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                } catch (proxyError) {
+                    console.log('Proxy failed, trying direct fetch...');
+                    response = await fetch(config.url);
+                }
+
+                if (!response.ok) {
+                    // throw new Error(`HTTP error! Status: ${response.status}`);
+                    alert(`HTTP error! Status: ${response.status}`);
+                    window.open(PROXY_URL,"_blank");
+                    return;
+                }
+
+                data = await response.json();
+
+                // Cache the data
+                dataCache.set(cacheKey, data);
+                updateCacheStatus();
+
+                // Process the data
+                processFacilityData(data, facilityType, config);
+
+            } catch (error) {
+                console.error(`Error loading ${facilityType} data:`, error);
+                showNotification(`無法載入${facilityType}數據，請檢查網絡連接或稍後再試。`);
+
+                // Try direct fetch without proxy as fallback
+                try {
+                    console.log('Trying direct fetch...');
+                    const directResponse = await fetch(config.url);
+                    if (directResponse.ok) {
+                        const directData = await directResponse.json();
+                        processFacilityData(directData, facilityType, config);
+                        showNotification('已使用直接連接載入數據');
+                        return;
+                    }
+                } catch (directError) {
+                    console.error('Direct fetch also failed:', directError);
+                }
+
+                // Show error in facilities list
+                const container = document.getElementById('facilitiesList');
+                container.innerHTML = `
+                    <div class="error-message">
+                        <h4><i class="fas fa-exclamation-triangle"></i> 數據載入失敗</h4>
+                        <p>無法從伺服器載入 ${facilityType} 數據。</p>
+                        <p>錯誤訊息: ${error.message}</p>
+                        <p>請檢查網絡連接後重試。</p>
+                    </div>
+                `;
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        // Process facility data based on configuration
+        function processFacilityData(data, facilityType, config) {
+            allFacilities = [];
+            groupedData = {};
+
+            // Update header to show current facility type
+            document.querySelector('.header h1').innerHTML = `<i class="fas fa-futbol"></i> ${facilityType}查詢系統`;
+            document.querySelector('.header p').textContent = `查詢全港各區${facilityType}資訊`;
+
+            // Process data based on grouping type
+            switch (config.grouping) {
+                case 'district-name':
+                    processDistrictNameGrouping(data, facilityType);
+                    break;
+                case 'dataset-nsearch01-search01-name':
+                    processDatasetNsearch01Search01NameGrouping(data, facilityType);
+                    break;
+                case 'dataset-search02-search01-name':
+                    processDatasetSearch02Search01NameGrouping(data, facilityType);
+                    break;
+                case 'dataset-search01-name':
+                    processDatasetSearch01NameGrouping(data, facilityType);
+                    break;
+                case 'badminton-grouping':
+                    processBadmintonGrouping(data, facilityType);
+                    break;
+                case 'hiking-trails-grouping':
+                    processHikingTrailsGrouping(data, facilityType);
+                    break;
+                default:
+                    console.error('Unknown grouping type:', config.grouping);
+                    return;
+            }
+
+            // Update stats
+            updateStats();
+
+            // Render facility list
+            renderFacilitiesList();
+
+            // Create markers on map
+            createMapMarkers();
+
+            // Open facilities list accordion
+            document.getElementById('headerFacilities').classList.add('active');
+            document.getElementById('contentFacilities').classList.add('active');
+            document.getElementById('headerFacilities').querySelector('.fa-chevron-down').style.transform = 'rotate(180deg)';
+        }
+
+        // Process data with District_cn -> Name_cn grouping
+        function processDistrictNameGrouping(data, facilityType) {
+            // Handle both array and GeoJSON formats
+            let items = [];
+            if (Array.isArray(data)) {
+                items = data;
+            } else if (data.features && Array.isArray(data.features)) {
+                items = data.features.map(feature => feature.properties);
+            }
+
+            items.forEach((item, i) => {
+                const facility = createFacilityObject(item, facilityType);
+                if (data.features) {
+                    const coordinates = data?.features[i].geometry.coordinates;
+                    facility.latitude = coordinates[1]
+                    facility.longitude = coordinates[0]
+                }
+                allFacilities.push(facility);
+
+                // Group by district
+                const district = item.District_cn || '未分類';
+                if (!groupedData[district]) {
+                    groupedData[district] = [];
+                }
+                groupedData[district].push(facility);
+            });
+        }
+
+        // Process data for 羽毛球場 - District_Name_TC -> Venue_Name_TC -> Facility_Type_Name_TC -> Facility_Location_Name_TC
+        function processBadmintonGrouping(data, facilityType) {
+            if (!Array.isArray(data)) {
+                console.error('Expected array data for badminton but got:', data);
+                return;
+            }
+
+            data.forEach((item) => {
+                console.log(facilityType)
+                const facility = createFacilityObject(item, facilityType);
+
+                // 使用經緯度座標
+                if (item.Venue_Latitude && item.Venue_Longitude) {
+                    facility.latDec = parseFloat(item.Venue_Latitude);
+                    facility.lonDec = parseFloat(item.Venue_Longitude);
+                }
+
+                allFacilities.push(facility);
+
+                // Group hierarchically: District_Name_TC -> Venue_Name_TC -> Facility_Type_Name_TC -> Facility_Location_Name_TC
+                const district = item.District_Name_TC || '未分類';
+                const venue = item.Venue_Name_TC || '未分類';
+                const facilityType = item.Facility_Type_Name_TC || '未分類';
+                const location = item.Facility_Location_Name_TC || '未分類';
+
+                if (!groupedData[district]) {
+                    groupedData[district] = {};
+                }
+                if (!groupedData[district][venue]) {
+                    groupedData[district][venue] = {};
+                }
+                if (!groupedData[district][venue][facilityType]) {
+                    groupedData[district][venue][facilityType] = {};
+                }
+                if (!groupedData[district][venue][facilityType][location]) {
+                    groupedData[district][venue][facilityType][location] = [];
+                }
+                groupedData[district][venue][facilityType][location].push(facility);
+            });
+        }
+
+        // Process data for 遠足徑 - Region_Ch -> C_NAME -> Trail_name_Ch -> Type_Ch -> Difficult_Ch
+        function processHikingTrailsGrouping(data, facilityType) {
+            if (!data.features || !Array.isArray(data.features)) {
+                console.error('Expected GeoJSON features for hiking trails but got:', data);
+                return;
+            }
+
+            data.features.forEach(feature => {
+                const props = feature.properties;
+                const facility = createFacilityObject(props, facilityType);
+
+                // Extract coordinates from geometry (取線段的第一個點)
+                if (feature.geometry && feature.geometry.coordinates) {
+                    const coords = feature.geometry.coordinates[0][0];
+                    if (Array.isArray(coords) && coords.length >= 2) {
+                        facility.lonDec = coords[0];
+                        facility.latDec = coords[1];
+                    }
+                }
+
+                allFacilities.push(facility);
+
+                // Group hierarchically: Region_Ch -> C_NAME -> Trail_name_Ch -> Type_Ch -> Difficult_Ch
+                const region = props.Region_Ch || '未分類';
+                const cName = props.C_NAME || '未分類';
+                const trailName = props.Trail_name_Ch || '未分類';
+                const type = props.Type_Ch || '未分類';
+                const difficulty = props.Difficult_Ch || '未分類';
+
+                if (!groupedData[region]) {
+                    groupedData[region] = {};
+                }
+                if (!groupedData[region][cName]) {
+                    groupedData[region][cName] = {};
+                }
+                if (!groupedData[region][cName][trailName]) {
+                    groupedData[region][cName][trailName] = {};
+                }
+                if (!groupedData[region][cName][trailName][type]) {
+                    groupedData[region][cName][trailName][type] = {};
+                }
+                if (!groupedData[region][cName][trailName][type][difficulty]) {
+                    groupedData[region][cName][trailName][type][difficulty] = [];
+                }
+                groupedData[region][cName][trailName][type][difficulty].push(facility);
+            });
+        }
+
+        // Process data with DATASET_TC -> NSEARCH01_TC -> SEARCH01_TC -> NAME_TC grouping (運動場)
+        function processDatasetNsearch01Search01NameGrouping(data, facilityType) {
+            if (!data.features || !Array.isArray(data.features)) {
+                console.error('Expected GeoJSON features but got:', data);
+                return;
+            }
+
+            data.features.forEach(feature => {
+                const props = feature.properties;
+                const facility = createFacilityObject(props, facilityType);
+
+                // Extract coordinates
+                if (feature.geometry && feature.geometry.coordinates) {
+                    facility.lonDec = feature.geometry.coordinates[0];
+                    facility.latDec = feature.geometry.coordinates[1];
+                } else if (props.LONGITUDE && props.LATITUDE) {
+                    facility.lonDec = parseFloat(props.LONGITUDE);
+                    facility.latDec = parseFloat(props.LATITUDE);
+                }
+
+                allFacilities.push(facility);
+
+                // Group hierarchically
+                const dataset = props.DATASET_TC || '未分類';
+                const nsearch01 = props.NSEARCH01_TC || '未分類';
+                const search01 = props.SEARCH01_TC || '未分類';
+
+                if (!groupedData[dataset]) {
+                    groupedData[dataset] = {};
+                }
+                if (!groupedData[dataset][nsearch01]) {
+                    groupedData[dataset][nsearch01] = {};
+                }
+                if (!groupedData[dataset][nsearch01][search01]) {
+                    groupedData[dataset][nsearch01][search01] = [];
+                }
+                groupedData[dataset][nsearch01][search01].push(facility);
+            });
+        }
+
+        // Process data with DATASET_TC -> SEARCH02_TC -> SEARCH01_TC -> NAME_TC grouping (游泳池)
+        function processDatasetSearch02Search01NameGrouping(data, facilityType) {
+            if (!data.features || !Array.isArray(data.features)) {
+                console.error('Expected GeoJSON features but got:', data);
+                return;
+            }
+
+            data.features.forEach(feature => {
+                const props = feature.properties;
+                const facility = createFacilityObject(props, facilityType);
+
+                // Extract coordinates
+                if (feature.geometry && feature.geometry.coordinates) {
+                    facility.lonDec = feature.geometry.coordinates[0];
+                    facility.latDec = feature.geometry.coordinates[1];
+                } else if (props.LONGITUDE && props.LATITUDE) {
+                    facility.lonDec = parseFloat(props.LONGITUDE);
+                    facility.latDec = parseFloat(props.LATITUDE);
+                }
+
+                allFacilities.push(facility);
+
+                // Group hierarchically
+                const dataset = props.DATASET_TC || '未分類';
+                const search02 = props.SEARCH02_TC || '未分類';
+                const search01 = props.SEARCH01_TC || '未分類';
+
+                if (!groupedData[dataset]) {
+                    groupedData[dataset] = {};
+                }
+                if (!groupedData[dataset][search02]) {
+                    groupedData[dataset][search02] = {};
+                }
+                if (!groupedData[dataset][search02][search01]) {
+                    groupedData[dataset][search02][search01] = [];
+                }
+                groupedData[dataset][search02][search01].push(facility);
+            });
+        }
+
+        // Process data with DATASET_TC -> SEARCH01_TC -> NAME_TC grouping (壁球場)
+        function processDatasetSearch01NameGrouping(data, facilityType) {
+            if (!data.features || !Array.isArray(data.features)) {
+                console.error('Expected GeoJSON features but got:', data);
+                return;
+            }
+
+            data.features.forEach(feature => {
+                const props = feature.properties;
+                const facility = createFacilityObject(props, facilityType);
+
+                // Extract coordinates
+                if (feature.geometry && feature.geometry.coordinates) {
+                    facility.lonDec = feature.geometry.coordinates[0];
+                    facility.latDec = feature.geometry.coordinates[1];
+                } else if (props.LONGITUDE && props.LATITUDE) {
+                    facility.lonDec = parseFloat(props.LONGITUDE);
+                    facility.latDec = parseFloat(props.LATITUDE);
+                }
+
+                allFacilities.push(facility);
+
+                // Group hierarchically
+                const dataset = props.DATASET_TC || '未分類';
+                const search01 = props.SEARCH01_TC || '未分類';
+
+                if (!groupedData[dataset]) {
+                    groupedData[dataset] = {};
+                }
+                if (!groupedData[dataset][search01]) {
+                    groupedData[dataset][search01] = [];
+                }
+                groupedData[dataset][search01].push(facility);
+            });
+        }
+
+        // Create a standardized facility object
+        function createFacilityObject(rawData, facilityType) {
+            const config = FACILITY_CONFIG[facilityType];
+            const facility = {
+                id: '',
+                name: '',
+                type: facilityType,
+                rawData: rawData,
+                latDec: null,
+                lonDec: null,
+                latitude: null,
+                longitude: null,
+                details: {}
+            };
+
+            // Extract essential attributes based on configuration
+            config.essentialAttributes.forEach(attr => {
+                if (rawData[attr] !== undefined) {
+                    if (attr === 'GIHS' || attr === 'OBJECTID') {
+                        facility.id = rawData[attr].toString();
+                    } else if (attr === 'Name_cn' || attr === 'NAME_TC') {
+                        facility.name = rawData[attr];
+                    } else if (attr === 'District_cn' || attr === 'District_Name_TC' || attr === 'SEARCH01_TC') {
+                        facility.details['地區'] = rawData[attr];
+                    } else if (attr === 'DATASET_TC') {
+                        facility.details['數據集'] = rawData[attr];
+                    } else if (attr === 'NSEARCH01_TC') {
+                        facility.details['主要設施'] = rawData[attr];
+                    } else if (attr === 'SEARCH02_TC') {
+                        facility.details['設施類型'] = rawData[attr];
+                    } else if (attr === 'Venue_Name_TC') {
+                        facility.name = rawData[attr];
+                        facility.details['場地名稱'] = rawData[attr];
+                    } else if (attr === 'Facility_Type_Name_TC') {
+                        facility.details['設施類型'] = rawData[attr];
+                    } else if (attr === 'Facility_Location_Name_TC') {
+                        facility.details['設施位置'] = rawData[attr];
+                    } else if (attr === 'Region_Ch') {
+                        facility.details['地區'] = rawData[attr];
+                    } else if (attr === 'C_NAME') {
+                        facility.name = rawData[attr];
+                        facility.details['路線名稱'] = rawData[attr];
+                    } else if (attr === 'Trail_name_Ch') {
+                        facility.details['路段名稱'] = rawData[attr];
+                    } else if (attr === 'Type_Ch') {
+                        facility.details['類型'] = rawData[attr];
+                    } else if (attr === 'Difficult_Ch') {
+                        facility.details['難度'] = rawData[attr];
+                    } else if (attr === 'Latitude') {
+                        facility.latitude = rawData[attr];
+                        facility.latDec = convertDMSToDD(rawData[attr]);
+                    } else if (attr === 'Longitude') {
+                        facility.longitude = rawData[attr];
+                        facility.lonDec = convertDMSToDD(rawData[attr]);
+                    }
+                }
+            });
+
+            // Extract additional common attributes
+            const commonAttrs = {
+                // 通用屬性
+                'Address_cn': '地址',
+                'ADDRESS_TC': '地址',
+                'Address_en': '地址(英文)',
+                'ADDRESS_EN': '地址(英文)',
+                'Opening_hours_cn': '開放時間',
+                'Phone': '電話',
+                'Court_no_cn': '球場數量',
+                'Size_cn': '面積',
+                'Ancillary_facilities_cn': '附屬設施',
+                'Remarks_cn': '備註',
+                'Facilities_b5': '設施',
+                'No__of_Squash_Courts_TC': '壁球場數量',
+
+                // 羽毛球場屬性
+                'Venue_Address_TC': '場地地址',
+                'Venue_Address_EN': '場地地址(英文)',
+                'Venue_Phone_No.': '場地電話',
+                'Available_Date': '可用日期',
+                'Session_Start_Time': '開始時間',
+                'Session_End_Time': '結束時間',
+                'Available_Courts': '可用場數',
+
+                // 遠足徑屬性
+                'Section_No': '路段編號',
+                'Trail_ID': '遠足徑ID',
+                'Startpt_En': '起點(英文)',
+                'Startpt_Ch': '起點',
+                'Finishpt_E': '終點(英文)',
+                'Finishpt_C': '終點',
+                'Tel': '電話',
+                'Webpage_En': '網頁(英文)',
+                'Webpage_Ch': '網頁',
+                'Shape_Length': '長度(米)'
+            };
+
+            for (const [attr, label] of Object.entries(commonAttrs)) {
+                if (rawData[attr] !== undefined && rawData[attr] !== null && rawData[attr] !== '') {
+                    facility.details[label] = rawData[attr];
+                }
+            }
+
+            // Generate ID if not found
+            if (!facility.id) {
+                facility.id = Math.random().toString(36).substr(2, 9);
+            }
+
+            return facility;
+        }
+
+        // Convert DMS (Degrees-Minutes-Seconds) to Decimal Degrees
+        function convertDMSToDD(dms) {
+            if (!dms) return null;
+
+            // Check if already decimal
+            if (typeof dms === 'number') {
+                return dms;
+            }
+
+            // Parse DMS format like "114-11-0" or "114.1234"
+            if (dms.includes('-')) {
+                const parts = dms.split('-');
+                if (parts.length >= 3) {
+                    const degrees = parseFloat(parts[0]);
+                    const minutes = parseFloat(parts[1]);
+                    const seconds = parseFloat(parts[2]);
+
+                    if (isNaN(degrees) || isNaN(minutes) || isNaN(seconds)) return null;
+
+                    let dd = Math.abs(degrees) + minutes / 60 + seconds / 3600;
+                    dd = degrees < 0 ? -dd : dd;
+                    return dd;
+                }
+            } else {
+                // Try to parse as decimal
+                const dd = parseFloat(dms);
+                if (!isNaN(dd)) return dd;
+            }
+
+            return null;
+        }
+
+        // Update statistics display
+        function updateStats() {
+            const totalFacilities = allFacilities.length;
+            let totalGroups = 0;
+
+            // Count groups based on structure
+            if (Object.keys(groupedData).length > 0) {
+                if (Array.isArray(groupedData[Object.keys(groupedData)[0]])) {
+                    // Simple grouping
+                    totalGroups = Object.keys(groupedData).length;
+                } else {
+                    // Nested grouping - need to count leaf nodes
+                    totalGroups = countLeafNodes(groupedData);
+                }
+            }
+
+            document.getElementById('totalFacilities').textContent = totalFacilities;
+            document.getElementById('totalDistricts').textContent = totalGroups;
+            document.getElementById('visibleFacilities').textContent = totalFacilities;
+        }
+
+        // Count leaf nodes in nested object
+        function countLeafNodes(obj) {
+            let count = 0;
+
+            function traverse(current) {
+                if (Array.isArray(current)) {
+                    count += current.length;
+                } else if (typeof current === 'object') {
+                    for (const key in current) {
+                        traverse(current[key]);
+                    }
+                }
+            }
+
+            traverse(obj);
+            return count;
+        }
+
+        // Render facilities list based on grouping structure
+        function renderFacilitiesList() {
+            const container = document.getElementById('facilitiesList');
+            container.innerHTML = '';
+
+            if (allFacilities.length === 0) {
+                container.innerHTML = '<div class="info-box"><p>未找到相關設施數據。</p></div>';
+                return;
+            }
+
+            // Check grouping type
+            const firstKey = Object.keys(groupedData)[0];
+            if (!firstKey) return;
+
+            if (Array.isArray(groupedData[firstKey])) {
+                // Simple district-name grouping
+                renderSimpleGrouping(container);
+            } else {
+                // Nested grouping
+                renderNestedGrouping(container);
+            }
+
+            // Setup facility item click events
+            setupFacilityItemEvents();
+        }
+
+        // Render simple district-name grouping
+        function renderSimpleGrouping(container) {
+            // Sort districts alphabetically
+            const sortedDistricts = Object.keys(groupedData).sort();
+
+            sortedDistricts.forEach(district => {
+                const facilities = groupedData[district];
+
+                const districtAccordion = document.createElement('div');
+                districtAccordion.className = 'multi-level-accordion';
+                districtAccordion.innerHTML = `
+                    <div class="level-1-header">
+                        <span>
+                            ${district}
+                            <span class="counter-badge">${facilities.length}</span>
+                        </span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="level-1-content"></div>
+                `;
+
+                container.appendChild(districtAccordion);
+
+                // Add click event
+                const header = districtAccordion.querySelector('.level-1-header');
+                const content = districtAccordion.querySelector('.level-1-content');
+
+                header.addEventListener('click', function () {
+                    toggleAccordion(this, content);
+                });
+
+                // Add facility items
+                const facilitiesContainer = document.createElement('div');
+                facilities.forEach(facility => {
+                    const facilityItem = createFacilityItemElement(facility);
+                    facilitiesContainer.appendChild(facilityItem);
+                });
+
+                content.appendChild(facilitiesContainer);
+            });
+        }
+
+        // Render nested grouping (包括羽毛球場和遠足徑的多層級分組)
+        function renderNestedGrouping(container) {
+            for (const level1Key in groupedData) {
+                const level1Content = document.createElement('div');
+                level1Content.className = 'multi-level-accordion';
+
+                let level1Count = 0;
+                let level1Html = '';
+
+                const level1Data = groupedData[level1Key];
+
+                if (typeof level1Data === 'object' && !Array.isArray(level1Data)) {
+                    // Has level 2
+                    for (const level2Key in level1Data) {
+                        const level2Data = level1Data[level2Key];
+
+                        let level2Count = 0;
+                        let level2Html = '';
+
+                        if (typeof level2Data === 'object' && !Array.isArray(level2Data)) {
+                            // Has level 3
+                            for (const level3Key in level2Data) {
+                                const level3Data = level2Data[level3Key];
+
+                                let level3Count = 0;
+                                let level3Html = '';
+
+                                if (typeof level3Data === 'object' && !Array.isArray(level3Data)) {
+                                    // Has level 4 (羽毛球場或遠足徑)
+                                    for (const level4Key in level3Data) {
+                                        const level4Data = level3Data[level4Key];
+
+                                        let level4Count = 0;
+                                        let level4Html = '';
+
+                                        if (typeof level4Data === 'object' && !Array.isArray(level4Data)) {
+                                            // Has level 5 (遠足徑的難度級別)
+                                            for (const level5Key in level4Data) {
+                                                const facilities = level4Data[level5Key];
+                                                level4Count += facilities.length;
+                                                level3Count += facilities.length;
+
+                                                level4Html += `
+                                                    <div class="level-5-header" style="background-color: #d9534f; padding: 6px 8px; border-radius: 3px; margin-bottom: 5px; margin-top: 4px; color: white; cursor: pointer; display: flex; justify-content: space-between;">
+                                                        <span>
+                                                            ${level5Key}
+                                                            <span class="counter-badge" style="background-color: rgba(255,255,255,0.3)">${facilities.length}</span>
+                                                        </span>
+                                                        <i class="fas fa-chevron-down"></i>
+                                                    </div>
+                                                    <div class="level-5-content" style="background-color: #f2dede; padding: 0; max-height: 0; overflow: hidden; transition: max-height 0.3s ease;">
+                                                        ${facilities.map(f => createFacilityItemElement(f).outerHTML).join('')}
+                                                    </div>
+                                                `;
+                                            }
+                                        } else if (Array.isArray(level4Data)) {
+                                            // Level 4 is leaf (羽毛球場的設施位置)
+                                            level4Count = level4Data.length;
+                                            level3Count += level4Data.length;
+                                            level4Html = level4Data.map(f => createFacilityItemElement(f).outerHTML).join('');
+                                        }
+
+                                        level2Count += level4Count;
+
+                                        if (level4Html.includes('level-5-header')) {
+                                            // Has level 5
+                                            level3Html += `
+                                                <div class="level-4-header" style="background-color: #5bc0de; padding: 8px 10px; border-radius: 3px; margin-bottom: 5px; margin-top: 6px; color: white; cursor: pointer; display: flex; justify-content: space-between;">
+                                                    <span>
+                                                        ${level4Key}
+                                                        <span class="counter-badge" style="background-color: rgba(255,255,255,0.3)">${level4Count}</span>
+                                                    </span>
+                                                    <i class="fas fa-chevron-down"></i>
+                                                </div>
+                                                <div class="level-4-content" style="background-color: #d9edf7; padding: 0; max-height: 0; overflow: hidden; transition: max-height 0.3s ease;">
+                                                    ${level4Html}
+                                                </div>
+                                            `;
+                                        } else {
+                                            // Level 4 is leaf
+                                            level3Html += `
+                                                <div class="level-4-header" style="background-color: #5bc0de; padding: 8px 10px; border-radius: 3px; margin-bottom: 5px; margin-top: 6px; color: white; display: flex; justify-content: space-between;">
+                                                    <span>
+                                                        ${level4Key}
+                                                        <span class="counter-badge" style="background-color: rgba(255,255,255,0.3)">${level4Count}</span>
+                                                    </span>
+                                                </div>
+                                                <div class="level-4-content" style="background-color: #d9edf7; padding: 10px;">
+                                                    ${level4Html}
+                                                </div>
+                                            `;
+                                        }
+                                    }
+                                } else if (Array.isArray(level3Data)) {
+                                    // Level 3 is leaf
+                                    level3Count = level3Data.length;
+                                    level2Count += level3Data.length;
+                                    level3Html = level3Data.map(f => createFacilityItemElement(f).outerHTML).join('');
+                                }
+
+                                level1Count += level3Count;
+
+                                if (level3Html.includes('level-4-header')) {
+                                    // Has level 4 or 5
+                                    level2Html += `
+                                        <div class="level-3-header">
+                                            <span>
+                                                ${level3Key}
+                                                <span class="counter-badge">${level3Count}</span>
+                                            </span>
+                                            <i class="fas fa-chevron-down"></i>
+                                        </div>
+                                        <div class="level-3-content">
+                                            ${level3Html}
+                                        </div>
+                                    `;
+                                } else {
+                                    // Level 3 is leaf
+                                    level2Html += `
+                                        <div class="level-3-header">
+                                            <span>
+                                                ${level3Key}
+                                                <span class="counter-badge">${level3Count}</span>
+                                            </span>
+                                        </div>
+                                        <div class="level-3-content">
+                                            ${level3Html}
+                                        </div>
+                                    `;
+                                }
+                            }
+                        } else if (Array.isArray(level2Data)) {
+                            // Level 2 is leaf (facilities array)
+                            level2Count = level2Data.length;
+                            level1Count += level2Data.length;
+                            level2Html = level2Data.map(f => createFacilityItemElement(f).outerHTML).join('');
+                        }
+
+                        if (level2Html.includes('level-3-header')) {
+                            // Has level 3 or more
+                            level1Html += `
+                                <div class="level-2-header">
+                                    <span>
+                                        ${level2Key}
+                                        <span class="counter-badge">${level2Count}</span>
+                                    </span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="level-2-content">
+                                    ${level2Html}
+                                </div>
+                            `;
+                        } else {
+                            // Level 2 is leaf
+                            level1Html += `
+                                <div class="level-2-header">
+                                    <span>
+                                        ${level2Key}
+                                        <span class="counter-badge">${level2Count}</span>
+                                    </span>
+                                </div>
+                                <div class="level-2-content">
+                                    ${level2Html}
+                                </div>
+                            `;
+                        }
+                    }
+                } else if (Array.isArray(level1Data)) {
+                    // Level 1 is leaf
+                    level1Count = level1Data.length;
+                    level1Html = level1Data.map(f => createFacilityItemElement(f).outerHTML).join('');
+                }
+
+                level1Content.innerHTML = `
+                    <div class="level-1-header">
+                        <span>
+                            ${level1Key}
+                            <span class="counter-badge">${level1Count}</span>
+                        </span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="level-1-content">
+                        ${level1Html}
+                    </div>
+                `;
+
+                container.appendChild(level1Content);
+
+                // Add click events for all headers
+                const level1Header = level1Content.querySelector('.level-1-header');
+                const level1ContentDiv = level1Content.querySelector('.level-1-content');
+                level1Header.addEventListener('click', () => toggleAccordion(level1Header, level1ContentDiv));
+
+                // Level 2 headers
+                level1Content.querySelectorAll('.level-2-header').forEach(header => {
+                    const content = header.nextElementSibling;
+                    header.addEventListener('click', () => toggleAccordion(header, content));
+                });
+
+                // Level 3 headers
+                level1Content.querySelectorAll('.level-3-header').forEach(header => {
+                    const content = header.nextElementSibling;
+                    header.addEventListener('click', () => toggleAccordion(header, content));
+                });
+
+                // Level 4 headers (羽毛球場/遠足徑)
+                level1Content.querySelectorAll('.level-4-header').forEach(header => {
+                    const content = header.nextElementSibling;
+                    header.addEventListener('click', function () {
+                        const isActive = header.classList.contains('active');
+                        header.classList.toggle('active');
+                        content.classList.toggle('active');
+                        const icon = header.querySelector('.fa-chevron-down');
+                        if (icon) {
+                            icon.style.transform = isActive ? 'rotate(0deg)' : 'rotate(180deg)';
+                        }
+                    });
+                });
+
+                // Level 5 headers (遠足徑的難度)
+                level1Content.querySelectorAll('.level-5-header').forEach(header => {
+                    const content = header.nextElementSibling;
+                    header.addEventListener('click', function () {
+                        const isActive = header.classList.contains('active');
+                        header.classList.toggle('active');
+                        content.classList.toggle('active');
+                        const icon = header.querySelector('.fa-chevron-down');
+                        if (icon) {
+                            icon.style.transform = isActive ? 'rotate(0deg)' : 'rotate(180deg)';
+                        }
+                    });
+                });
+            }
+        }
+
+        // Toggle accordion
+        function toggleAccordion(header, content) {
+            const isActive = header.classList.contains('active');
+
+            // Toggle active class
+            header.classList.toggle('active');
+            content.classList.toggle('active');
+
+            // Rotate icon
+            const icon = header.querySelector('.fa-chevron-down');
+            if (icon) {
+                icon.style.transform = isActive ? 'rotate(0deg)' : 'rotate(180deg)';
+            }
+        }
+
+        // Create a facility item element
+        function createFacilityItemElement(facility) {
+            const facilityItem = document.createElement('div');
+            facilityItem.className = 'facility-item';
+            facilityItem.dataset.facilityId = facility.id;
+
+            let detailsHtml = '';
+
+            // Add essential details based on facility type
+            if (facility.details['地址'] || facility.details['場地地址']) {
+                const address = facility.details['地址'] || facility.details['場地地址'];
+                detailsHtml += `
+                    <div class="facility-detail-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span class="facility-detail-text">${address}</span>
+                    </div>
+                `;
+            }
+
+            if (facility.details['開放時間']) {
+                const openingHours = facility.details['開放時間'].replace(/<br>/g, ' ').replace(/\r\n/g, ' ');
+                detailsHtml += `
+                    <div class="facility-detail-item">
+                        <i class="fas fa-clock"></i>
+                        <span class="facility-detail-text">${openingHours}</span>
+                    </div>
+                `;
+            }
+
+            if (facility.details['電話'] || facility.details['場地電話']) {
+                const phone = facility.details['電話'] || facility.details['場地電話'];
+                detailsHtml += `
+                    <div class="facility-detail-item">
+                        <i class="fas fa-phone"></i>
+                        <span class="facility-detail-text">${phone}</span>
+                    </div>
+                `;
+            }
+
+            // Add facility-specific details
+            if (facility.details['設施類型']) {
+                detailsHtml += `
+                    <div class="facility-detail-item">
+                        <i class="fas fa-tag"></i>
+                        <span class="facility-detail-text">類型: ${facility.details['設施類型']}</span>
+                    </div>
+                `;
+            }
+
+            if (facility.details['設施位置']) {
+                detailsHtml += `
+                    <div class="facility-detail-item">
+                        <i class="fas fa-map-pin"></i>
+                        <span class="facility-detail-text">位置: ${facility.details['設施位置']}</span>
+                    </div>
+                `;
+            }
+
+            if (facility.details['路段名稱']) {
+                detailsHtml += `
+                    <div class="facility-detail-item">
+                        <i class="fas fa-road"></i>
+                        <span class="facility-detail-text">路段: ${facility.details['路段名稱']}</span>
+                    </div>
+                `;
+            }
+
+            if (facility.details['難度']) {
+                detailsHtml += `
+                    <div class="facility-detail-item">
+                        <i class="fas fa-mountain"></i>
+                        <span class="facility-detail-text">難度: ${facility.details['難度']}</span>
+                    </div>
+                `;
+            }
+
+            if (facility.details['長度(米)']) {
+                const length = parseFloat(facility.details['長度(米)']).toFixed(0);
+                detailsHtml += `
+                    <div class="facility-detail-item">
+                        <i class="fas fa-ruler"></i>
+                        <span class="facility-detail-text">長度: ${length}米</span>
+                    </div>
+                `;
+            }
+
+            if (facility.details['可用場數'] && facility.details['可用場數'] !== '0') {
+                detailsHtml += `
+                    <div class="facility-detail-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span class="facility-detail-text" style="color: green;">可用場數: ${facility.details['可用場數']}</span>
+                    </div>
+                `;
+            } else if (facility.details['可用場數'] === '0') {
+                detailsHtml += `
+                    <div class="facility-detail-item">
+                        <i class="fas fa-times-circle"></i>
+                        <span class="facility-detail-text" style="color: red;">已滿</span>
+                    </div>
+                `;
+            }
+
+            facilityItem.innerHTML = `
+                <div class="facility-name">${facility.name}</div>
+                <div class="facility-details">
+                    ${detailsHtml || '<div class="facility-detail-item"><i class="fas fa-info-circle"></i><span class="facility-detail-text">點擊查看詳細資訊</span></div>'}
+                </div>
+            `;
+
+            return facilityItem;
+        }
+
+        // Setup facility item click events
+        function setupFacilityItemEvents() {
+            document.querySelectorAll('.facility-item').forEach(item => {
+                item.addEventListener('click', function () {
+                    // Remove active class from all facility items
+                    document.querySelectorAll('.facility-item').forEach(i => {
+                        i.classList.remove('active');
+                    });
+
+                    // Add active class to clicked item
+                    this.classList.add('active');
+
+                    // Find and highlight the corresponding facility
+                    const facilityId = this.dataset.facilityId;
+                    const facility = allFacilities.find(f => f.id === facilityId);
+
+                    if (facility) {
+                        selectFacility(facility);
+                    }
+                });
+            });
+        }
+
+        // Create markers on the map
+        function createMapMarkers() {
+            if (facilitiesLayer) {
+                map.removeLayer(facilitiesLayer);
+            }
+
+            facilitiesLayer = L.layerGroup().addTo(map);
+
+            let validMarkersCount = 0;
+
+            allFacilities.forEach(facility => {
+                // Get coordinates
+                let lat, lon;
+
+                if (facility.latDec && facility.lonDec) {
+                    lat = facility.latDec;
+                    lon = facility.lonDec;
+                } else if (facility.latitude && facility.longitude) {
+                    lat = convertDMSToDD(facility.latitude);
+                    lon = convertDMSToDD(facility.longitude);
+                }
+
+                if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
+                    console.warn(`Invalid coordinates for facility: ${facility.name}`, facility);
+                    return;
+                }
+
+                validMarkersCount++;
+
+                // Create marker with color based on facility type
+                const markerColor = getFacilityColor(facility.type);
+                const marker = L.circleMarker([lat, lon], {
+                    radius: 8,
+                    fillColor: markerColor,
+                    color: darkenColor(markerColor),
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+
+                // Create popup content
+                let popupContent = createPopupContent(facility);
+
+                marker.bindPopup(popupContent, {
+                    maxWidth: 300,
+                    minWidth: 200
+                });
+
+                // Add click event
+                marker.on('click', function () {
+                    selectFacility(facility);
+
+                    // Find and highlight the corresponding list item
+                    document.querySelectorAll('.facility-item').forEach(item => {
+                        item.classList.remove('active');
+                        if (item.dataset.facilityId === facility.id) {
+                            item.classList.add('active');
+                            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                            // Expand parent accordions
+                            expandParentAccordions(item);
+                        }
+                    });
+                });
+
+                facilitiesLayer.addLayer(marker);
+            });
+
+            console.log(`Created ${validMarkersCount} markers out of ${allFacilities.length} facilities`);
+        }
+
+        // Get color for facility type
+        function getFacilityColor(facilityType) {
+            const colors = {
+                '十一人足球場': '#ff6b6b',
+                '五人硬地足球場': '#ff8e6b',
+                '七人硬地足球場': '#ffb16b',
+                '運動場': '#4a90e2',
+                '網球場': '#5cb85c',
+                '網球練習場': '#4cae4c',
+                '健身室': '#f0ad4e',
+                '游泳池': '#5bc0de',
+                '射箭場': '#d9534f',
+                '壁球場': '#aa66cc',
+                '單車': '#ff4444',
+                '羽毛球場': '#4a90e2',
+                '遠足徑': '#5cb85c'
+            };
+
+            return colors[facilityType] || '#2c6c91';
+        }
+
+        // Darken color for marker border
+        function darkenColor(color) {
+            // Simple darkening
+            return color.replace(/^#/, '').replace(/../g, hex =>
+                ('0' + Math.max(0, parseInt(hex, 16) - 40).toString(16)).slice(-2)
+            );
+        }
+
+        // Create popup content for facility
+        function createPopupContent(facility) {
+            let content = `
+                <div style="font-weight: bold; margin-bottom: 8px; color: #2c3e50; font-size: 1.1em">${facility.name}</div>
+                <div style="margin-bottom: 5px;"><strong>設施類型:</strong> ${facility.type}</div>
+            `;
+
+            // Add all details
+            for (const [key, value] of Object.entries(facility.details)) {
+                if (value && value !== 'N.A.' && value !== 'null' && value !== 'undefined') {
+                    const cleanValue = String(value).replace(/<br>/g, '<br>').replace(/\r\n/g, '<br>');
+                    content += `<div style="margin-bottom: 3px;"><strong>${key}:</strong> ${cleanValue}</div>`;
+                }
+            }
+
+            return content;
+        }
+
+        // Expand parent accordions for a facility item
+        function expandParentAccordions(item) {
+            let current = item.parentElement;
+            while (current) {
+                if (current.classList.contains('level-1-content') ||
+                    current.classList.contains('level-2-content') ||
+                    current.classList.contains('level-3-content') ||
+                    current.classList.contains('level-4-content') ||
+                    current.classList.contains('level-5-content')) {
+                    const header = current.previousElementSibling;
+                    if (header && !header.classList.contains('active')) {
+                        header.classList.add('active');
+                        current.classList.add('active');
+                        if (header.querySelector('.fa-chevron-down')) {
+                            header.querySelector('.fa-chevron-down').style.transform = 'rotate(180deg)';
+                        }
+                    }
+                }
+                current = current.parentElement;
+            }
+        }
+
+        // Select and highlight a facility
+        function selectFacility(facility) {
+            // Clear previous selection
+            if (selectedFacility) {
+                // 檢查這個圖層是否仍然在地圖上
+                if (map.hasLayer(selectedFacility)) {
+                    map.removeLayer(selectedFacility);
+                }
+                selectedFacility = null;
+            }
+
+            // Get coordinates
+            let lat, lon;
+
+            if (facility.latDec && facility.lonDec) {
+                lat = facility.latDec;
+                lon = facility.lonDec;
+            } else if (facility.latitude && facility.longitude) {
+                lat = convertDMSToDD(facility.latitude);
+                lon = convertDMSToDD(facility.longitude);
+            }
+
+            if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
+                console.error('Invalid coordinates for facility:', facility);
+                showNotification('無法在地圖上顯示此設施（座標無效）');
+                return;
+            }
+
+            // Create highlighted marker
+            selectedFacility = L.circleMarker([lat, lon], {
+                radius: 12,
+                fillColor: '#ffcc00',
+                color: '#ff9900',
+                weight: 3,
+                opacity: 1,
+                fillOpacity: 0.9
+            });
+
+            // Create detailed popup content
+            let popupContent = createPopupContent(facility);
+
+            // Bind and open popup
+            selectedFacility.bindPopup(popupContent, {
+                maxWidth: 300,
+                minWidth: 200
+            }).openPopup();
+
+            // Pan to the selected facility
+            map.setView([lat, lon], 16);
+
+            // Add to map
+            selectedFacility.addTo(map);
+
+            // Show notification
+            showNotification(`已選取: ${facility.name} (${facility.type})`);
+        }
+
+        // Filter facilities based on search input
+        function filterFacilities(searchTerm) {
+            const searchLower = searchTerm.toLowerCase().trim();
+
+            if (!searchLower) {
+                // Show all facilities
+                document.querySelectorAll('.facility-item').forEach(item => {
+                    item.style.display = 'block';
+                });
+
+                document.querySelectorAll('.multi-level-accordion').forEach(accordion => {
+                    accordion.style.display = 'block';
+                });
+
+                document.getElementById('visibleFacilities').textContent = allFacilities.length;
+                return;
+            }
+
+            let visibleCount = 0;
+
+            // Filter facility items
+            document.querySelectorAll('.facility-item').forEach(item => {
+                const facilityName = item.querySelector('.facility-name').textContent.toLowerCase();
+                const details = item.querySelector('.facility-details').textContent.toLowerCase();
+
+                if (facilityName.includes(searchLower) || details.includes(searchLower)) {
+                    item.style.display = 'block';
+                    visibleCount++;
+
+                    // Ensure parent accordions are visible and expanded
+                    expandParentAccordionsForItem(item);
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Hide accordions with no visible facilities
+            document.querySelectorAll('.multi-level-accordion').forEach(accordion => {
+                const visibleItems = accordion.querySelectorAll('.facility-item[style="display: block"]');
+                if (visibleItems.length === 0) {
+                    accordion.style.display = 'none';
+                } else {
+                    accordion.style.display = 'block';
+                }
+            });
+
+            // Update visible count
+            document.getElementById('visibleFacilities').textContent = visibleCount;
+        }
+
+        // Expand parent accordions for a visible item
+        function expandParentAccordionsForItem(item) {
+            let current = item.parentElement;
+            while (current) {
+                if (current.classList.contains('level-1-content') ||
+                    current.classList.contains('level-2-content') ||
+                    current.classList.contains('level-3-content') ||
+                    current.classList.contains('level-4-content') ||
+                    current.classList.contains('level-5-content')) {
+                    const header = current.previousElementSibling;
+                    if (header) {
+                        // Make sure accordion is expanded
+                        if (!header.classList.contains('active')) {
+                            header.classList.add('active');
+                            current.classList.add('active');
+                            if (header.querySelector('.fa-chevron-down')) {
+                                header.querySelector('.fa-chevron-down').style.transform = 'rotate(180deg)';
+                            }
+                        }
+                    }
+                }
+                current = current.parentElement;
+            }
+        }
+
+        // Show temporary notification
+        function showNotification(message) {
+            // Remove existing notifications
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background-color: #2c6c91;
+                color: white;
+                padding: 15px 20px;
+                border-radius: 5px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 10000;
+                font-weight: 500;
+                max-width: 300px;
+                animation: fadeInOut 3s ease-in-out;
+            `;
+
+            // Add keyframes for animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fadeInOut {
+                    0% { opacity: 0; transform: translateY(-10px); }
+                    10% { opacity: 1; transform: translateY(0); }
+                    90% { opacity: 1; transform: translateY(0); }
+                    100% { opacity: 0; transform: translateY(-10px); }
+                }
+            `;
+            document.head.appendChild(style);
+
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            // Remove after animation completes
+            setTimeout(() => {
+                notification.remove();
+                style.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>
