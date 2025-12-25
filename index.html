@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-Hant-HK">
+<html lang="zh-HK">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>體育設施查詢系統</title>
+    <title>體育設施查詢系統 - 香港</title>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <!-- Leaflet Draw CSS -->
@@ -371,6 +371,38 @@
             word-break: break-word;
         }
 
+        /* 羽毛球預訂時段特別樣式 */
+        .badminton-session {
+            background-color: #e8f4ff;
+            border-left: 4px solid #4a90e2;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .badminton-session h5 {
+            color: #2c6c91;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .session-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .session-detail {
+            display: flex;
+            align-items: center;
+        }
+
+        .session-detail i {
+            margin-right: 6px;
+            color: #4a90e2;
+        }
+
         .control-group {
             margin-bottom: 15px;
         }
@@ -556,6 +588,14 @@
             .level-4-header,
             .level-5-header {
                 padding: 10px 12px;
+            }
+
+            .badminton-session {
+                padding: 8px;
+            }
+
+            .session-details {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -834,6 +874,31 @@
         .layer-control-item input[type="checkbox"] {
             margin-right: 5px;
         }
+
+        /* 日期時間標籤樣式 */
+        .datetime-tag {
+            display: inline-block;
+            background-color: #e8f4ff;
+            color: #2c6c91;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-right: 6px;
+            margin-bottom: 4px;
+            border: 1px solid #b8d4ff;
+        }
+
+        .available-tag {
+            background-color: #e8f6ef;
+            color: #27ae60;
+            border-color: #a3e9c1;
+        }
+
+        .full-tag {
+            background-color: #fdeded;
+            color: #e74c3c;
+            border-color: #f5b5b5;
+        }
     </style>
 </head>
 
@@ -891,7 +956,7 @@
                                 <span class="facility-type-name">單車設施</span>
                             </button>
                             <button class="facility-type-btn"
-                                data-url="https://data.smartplay.lcsd.gov.hk/rest/cms/api/v1/publ/contents/open-data/badminton/file"
+                                data-url="https://data.gov.hk/tc-data/dataset/hk-lcsd-facility-facility-bmtcvenue/resource/b14d6519-a3a0-4043-ab80-c2a286c96593"
                                 data-component="羽毛球場">
                                 <i class="fas fa-table-tennis"></i>
                                 <span class="facility-type-name">羽毛球場</span>
@@ -980,7 +1045,7 @@
                         <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="accordion-content" id="contentFacilities">
-                        <div class="search-box" hidden>
+                        <div class="search-box">
                             <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜尋設施名稱、地址或地區...">
                         </div>
 
@@ -1143,7 +1208,7 @@
         let currentFacilityType = null;
         let currentUrl = null;
         let groupedData = {};
-        let currentTrailId = null; // 新增：追踪當前顯示的遠足徑ID
+        let currentTrailId = null;
 
         // Cache management
         const dataCache = {
@@ -1219,7 +1284,7 @@
             }
         };
 
-        // Facility type configuration - 新增燒烤區配置
+        // Facility type configuration - 已更新羽毛球場API
         const FACILITY_CONFIG = {
             // JSON array format APIs
             '十一人足球場': {
@@ -1252,11 +1317,10 @@
                 grouping: 'district-name',
                 essentialAttributes: ['GIHS', 'District_cn', 'Name_cn', 'Latitude', 'Longitude']
             },
-
             '羽毛球場': {
                 url: 'https://data.smartplay.lcsd.gov.hk/rest/cms/api/v1/publ/contents/open-data/badminton/file',
-                grouping: 'badminton-grouping-fixed',
-                essentialAttributes: ['GIHS', 'District_Name_TC', 'Venue_Name_TC', 'Facility_Type_Name_TC', 'Facility_Location_Name_TC']
+                grouping: 'badminton-booking-slots',
+                essentialAttributes: ['Venue_Name_TC', 'District_Name_TC', 'Venue_Address_TC', 'Available_Date', 'Session_Start_Time', 'Session_End_Time', 'Available_Courts']
             },
             '遠足徑': {
                 url: 'https://portal.csdi.gov.hk/server/services/common/afcd_rcd_1665568199103_4360/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=Hiking_Trails&outputFormat=geojson',
@@ -1268,7 +1332,6 @@
                 grouping: 'bbq-grouping',
                 essentialAttributes: ['OBJECTID', 'DATASET_TC', 'DistrictTC', 'NameTC']
             },
-
             // GeoJSON format APIs
             '運動場': {
                 url: 'https://portal.csdi.gov.hk/server/services/common/lcsd_rcd_1629267205215_11128/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=geodatastore&outputFormat=geojson',
@@ -1323,6 +1386,7 @@
             setupAccordion();
             setupEventListeners();
             updateCacheStatus();
+            updateUIToTraditionalChinese();
 
             // Set default facility type and load data
             const defaultBtn = document.querySelector('.facility-type-btn.active');
@@ -1342,6 +1406,22 @@
                     : '<i class="fas fa-bars"></i> 隱藏控制面板';
             });
         });
+
+        // 更新UI為繁體中文
+        function updateUIToTraditionalChinese() {
+            // 更新標題
+            document.querySelector('.header h1').innerHTML = '<i class="fas fa-futbol"></i> 體育設施查詢系統';
+            document.querySelector('.header p').textContent = '查詢全港各區體育設施資訊，包括足球場⚽、網球場🎾、游泳池🏊、健身室💪、羽毛球場🏸、遠足徑🥾及燒烤區🍖等各類運動設施';
+
+            // 更新頁腳
+            document.querySelector('.footer-copyright').innerHTML = '&copy; 2024 體育設施查詢系統<br />數據由康樂及文化事務署及漁農自然護理署提供';
+
+            // 更新加載提示
+            document.getElementById('loadingText').textContent = '⏳ 正在載入體育設施數據...';
+
+            // 更新搜尋框
+            document.getElementById('searchInput').placeholder = '🔍 搜尋設施名稱、地址或地區...';
+        }
 
         // Initialize the map
         function initMap() {
@@ -1416,7 +1496,7 @@
             // Facility type selector
             document.querySelectorAll('.facility-type-btn').forEach(btn => {
                 btn.addEventListener('click', function () {
-                    document.querySelector(`.accordion-header.active`).click(); // Close any open accordion
+                    document.querySelector(`.accordion-header.active`).click();
 
                     // Remove active class from all buttons
                     document.querySelectorAll('.facility-type-btn').forEach(b => {
@@ -1512,7 +1592,6 @@
                 }
 
                 if (!response.ok) {
-                    // throw new Error(`HTTP error! Status: ${response.status}`);
                     alert(`HTTP error! Status: ${response.status}`);
                     window.open(PROXY_URL, '_blank');
                     return;
@@ -1565,7 +1644,7 @@
             allFacilities = [];
             allHikingTrails = [];
             groupedData = {};
-            currentTrailId = null; // 重置當前遠足徑ID
+            currentTrailId = null;
 
             // Clear previous hiking trails layer if exists
             if (hikingTrailsLayer) {
@@ -1593,6 +1672,9 @@
                     break;
                 case 'badminton-grouping-fixed':
                     processBadmintonGroupingFixed(data, facilityType);
+                    break;
+                case 'badminton-booking-slots':
+                    processBadmintonBookingSlots(data, facilityType);
                     break;
                 case 'hiking-trails-grouping-fixed':
                     processHikingTrailsGroupingFixed(data, facilityType);
@@ -1622,7 +1704,6 @@
 
         // Process data with District_cn -> Name_cn grouping
         function processDistrictNameGrouping(data, facilityType) {
-            // Handle both array and GeoJSON formats
             let items = [];
             if (Array.isArray(data)) {
                 items = data;
@@ -1648,67 +1729,96 @@
             });
         }
 
-        // 修復的羽毛球場處理函數 - 簡化分組結構
-        function processBadmintonGroupingFixed(data, facilityType) {
+        // 新羽毛球場處理函數 - 處理可預訂時段
+        function processBadmintonBookingSlots(data, facilityType) {
             if (!Array.isArray(data)) {
                 console.error('Expected array data for badminton but got:', data);
                 return;
             }
 
-            data.forEach((item) => {
-                const facility = createFacilityObject(item, facilityType);
+            // 按場地分組
+            const venueGroups = {};
 
-                // 使用經緯度座標
-                if (item.Venue_Latitude && item.Venue_Longitude) {
-                    facility.latDec = parseFloat(item.Venue_Latitude);
-                    facility.lonDec = parseFloat(item.Venue_Longitude);
-                } else if (item.LATITUDE && item.LONGITUDE) {
-                    facility.latDec = parseFloat(item.LATITUDE);
-                    facility.lonDec = parseFloat(item.LONGITUDE);
+            data.forEach((item) => {
+                const venueName = item.Venue_Name_TC || '未命名場地';
+                const district = item.District_Name_TC || '未分類';
+
+                if (!venueGroups[venueName]) {
+                    venueGroups[venueName] = {
+                        name: venueName,
+                        district: district,
+                        address: item.Venue_Address_TC || '',
+                        sessions: []
+                    };
+                }
+
+                // 添加時段信息
+                if (item.Available_Date && item.Session_Start_Time && item.Session_End_Time) {
+                    venueGroups[venueName].sessions.push({
+                        date: item.Available_Date,
+                        startTime: item.Session_Start_Time,
+                        endTime: item.Session_End_Time,
+                        availableCourts: item.Available_Courts || '0'
+                    });
+                }
+            });
+
+            // 轉換為設施對象
+            Object.values(venueGroups).forEach(venue => {
+                const facility = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    name: venue.name,
+                    type: facilityType,
+                    rawData: venue,
+                    latDec: null,
+                    lonDec: null,
+                    latitude: null,
+                    longitude: null,
+                    details: {
+                        '地區': venue.district,
+                        '地址': venue.address,
+                        '可預訂時段': venue.sessions.length,
+                        '時段詳情': venue.sessions
+                    }
+                };
+
+                // 添加可預訂時段
+                if (venue.sessions.length > 0) {
+                    const latestSession = venue.sessions[0];
+                    facility.details['最近可用日期'] = latestSession.date;
+                    facility.details['最近開始時間'] = latestSession.startTime;
+                    facility.details['最近結束時間'] = latestSession.endTime;
+                    facility.details['最近可用場數'] = latestSession.availableCourts;
                 }
 
                 allFacilities.push(facility);
 
-                // 簡化分組邏輯：只使用2層分組
-                const district = item.District_Name_TC || '未分類';
-                const venue = item.Venue_Name_TC || '未分類';
-
-                // 組合設施類型和位置作為設施名稱的一部分
-                const facilityTypeName = item.Facility_Type_Name_TC || '';
-                const location = item.Facility_Location_Name_TC || '';
-                const facilityName = venue + (facilityTypeName ? ` (${facilityTypeName}` : '') + (location ? ` - ${location})` : (facilityTypeName ? ')' : ''));
-
-                if (!groupedData[district]) {
-                    groupedData[district] = {};
+                // 按地區分組
+                if (!groupedData[venue.district]) {
+                    groupedData[venue.district] = [];
                 }
-                if (!groupedData[district][facilityName]) {
-                    groupedData[district][facilityName] = [];
-                }
-                groupedData[district][facilityName].push(facility);
+                groupedData[venue.district].push(facility);
             });
         }
 
-        // 修復的遠足徑處理函數 - 簡化分組結構
+        // 修復的遠足徑處理函數
         function processHikingTrailsGroupingFixed(data, facilityType) {
             if (!data.features || !Array.isArray(data.features)) {
                 console.error('Expected GeoJSON features for hiking trails but got:', data);
                 return;
             }
 
-            allHikingTrails = []; // 存儲遠足徑數據
+            allHikingTrails = [];
 
             data.features.forEach(feature => {
                 const props = feature.properties;
                 const facility = createFacilityObject(props, facilityType);
 
-                // 保存幾何數據用於繪製線條
                 facility.geometry = feature.geometry;
 
-                // 提取線段中間點作為標記位置
                 if (feature.geometry && feature.geometry.coordinates) {
                     const coords = feature.geometry.coordinates;
                     if (coords[0] && Array.isArray(coords[0]) && coords[0][0] && Array.isArray(coords[0][0])) {
-                        // 取線段中間的點
                         const midIndex = Math.floor(coords[0].length / 2);
                         if (coords[0][midIndex] && Array.isArray(coords[0][midIndex]) && coords[0][midIndex].length >= 2) {
                             facility.lonDec = coords[0][midIndex][0];
@@ -1720,11 +1830,8 @@
                 allFacilities.push(facility);
                 allHikingTrails.push(facility);
 
-                // 簡化分組邏輯：只使用2層分組
                 const region = props.Region_Ch || '未分類';
                 const trailName = props.C_NAME || '未分類';
-
-                // 組合路段名稱和難度作為設施名稱的一部分
                 const section = props.Trail_name_Ch || '';
                 const difficulty = props.Difficult_Ch || '';
                 const fullTrailName = trailName + (section ? ` (${section}` : '') + (difficulty ? ` - ${difficulty})` : (section ? ')' : ''));
@@ -1739,7 +1846,7 @@
             });
         }
 
-        // Process data for 燒烤區 - DATASET_TC -> DistrictTC -> NameTC
+        // Process data for 燒烤區
         function processBBQGrouping(data, facilityType) {
             if (!data.features || !Array.isArray(data.features)) {
                 console.error('Expected GeoJSON features for BBQ but got:', data);
@@ -1750,7 +1857,6 @@
                 const props = feature.properties;
                 const facility = createFacilityObject(props, facilityType);
 
-                // Extract coordinates from geometry
                 if (feature.geometry && feature.geometry.coordinates) {
                     facility.lonDec = feature.geometry.coordinates[0];
                     facility.latDec = feature.geometry.coordinates[1];
@@ -1761,7 +1867,6 @@
 
                 allFacilities.push(facility);
 
-                // Group hierarchically: DATASET_TC -> DistrictTC -> NameTC
                 const dataset = props.DATASET_TC || '未分類';
                 const district = props.DistrictTC || '未分類';
                 const name = props.NameTC || '未分類';
@@ -1779,7 +1884,7 @@
             });
         }
 
-        // Process data with DATASET_TC -> NSEARCH01_TC -> SEARCH01_TC -> NAME_TC grouping (運動場)
+        // Process data with DATASET_TC -> NSEARCH01_TC -> SEARCH01_TC -> NAME_TC grouping
         function processDatasetNsearch01Search01NameGrouping(data, facilityType) {
             if (!data.features || !Array.isArray(data.features)) {
                 console.error('Expected GeoJSON features but got:', data);
@@ -1790,7 +1895,6 @@
                 const props = feature.properties;
                 const facility = createFacilityObject(props, facilityType);
 
-                // Extract coordinates
                 if (feature.geometry && feature.geometry.coordinates) {
                     facility.lonDec = feature.geometry.coordinates[0];
                     facility.latDec = feature.geometry.coordinates[1];
@@ -1801,7 +1905,6 @@
 
                 allFacilities.push(facility);
 
-                // Group hierarchically
                 const dataset = props.DATASET_TC || '未分類';
                 const nsearch01 = props.NSEARCH01_TC || '未分類';
                 const search01 = props.SEARCH01_TC || '未分類';
@@ -1819,7 +1922,7 @@
             });
         }
 
-        // Process data with DATASET_TC -> SEARCH02_TC -> SEARCH01_TC -> NAME_TC grouping (游泳池)
+        // Process data with DATASET_TC -> SEARCH02_TC -> SEARCH01_TC -> NAME_TC grouping
         function processDatasetSearch02Search01NameGrouping(data, facilityType) {
             if (!data.features || !Array.isArray(data.features)) {
                 console.error('Expected GeoJSON features but got:', data);
@@ -1830,7 +1933,6 @@
                 const props = feature.properties;
                 const facility = createFacilityObject(props, facilityType);
 
-                // Extract coordinates
                 if (feature.geometry && feature.geometry.coordinates) {
                     facility.lonDec = feature.geometry.coordinates[0];
                     facility.latDec = feature.geometry.coordinates[1];
@@ -1841,7 +1943,6 @@
 
                 allFacilities.push(facility);
 
-                // Group hierarchically
                 const dataset = props.DATASET_TC || '未分類';
                 const search02 = props.SEARCH02_TC || '未分類';
                 const search01 = props.SEARCH01_TC || '未分類';
@@ -1859,7 +1960,7 @@
             });
         }
 
-        // Process data with DATASET_TC -> SEARCH01_TC -> NAME_TC grouping (壁球場)
+        // Process data with DATASET_TC -> SEARCH01_TC -> NAME_TC grouping
         function processDatasetSearch01NameGrouping(data, facilityType) {
             if (!data.features || !Array.isArray(data.features)) {
                 console.error('Expected GeoJSON features but got:', data);
@@ -1870,7 +1971,6 @@
                 const props = feature.properties;
                 const facility = createFacilityObject(props, facilityType);
 
-                // Extract coordinates
                 if (feature.geometry && feature.geometry.coordinates) {
                     facility.lonDec = feature.geometry.coordinates[0];
                     facility.latDec = feature.geometry.coordinates[1];
@@ -1881,7 +1981,6 @@
 
                 allFacilities.push(facility);
 
-                // Group hierarchically
                 const dataset = props.DATASET_TC || '未分類';
                 const search01 = props.SEARCH01_TC || '未分類';
 
@@ -1915,7 +2014,7 @@
                 if (rawData[attr] !== undefined) {
                     if (attr === 'GIHS' || attr === 'OBJECTID') {
                         facility.id = rawData[attr].toString();
-                    } else if (attr === 'Name_cn' || attr === 'NAME_TC' || attr === 'NameTC') {
+                    } else if (attr === 'Name_cn' || attr === 'NAME_TC' || attr === 'NameTC' || attr === 'Venue_Name_TC') {
                         facility.name = rawData[attr];
                     } else if (attr === 'District_cn' || attr === 'District_Name_TC' || attr === 'DistrictTC' || attr === 'SEARCH01_TC') {
                         facility.details['地區'] = rawData[attr];
@@ -1925,9 +2024,6 @@
                         facility.details['主要設施'] = rawData[attr];
                     } else if (attr === 'SEARCH02_TC') {
                         facility.details['設施類型'] = rawData[attr];
-                    } else if (attr === 'Venue_Name_TC') {
-                        facility.name = rawData[attr];
-                        facility.details['場地名稱'] = rawData[attr];
                     } else if (attr === 'Facility_Type_Name_TC') {
                         facility.details['設施類型'] = rawData[attr];
                     } else if (attr === 'Facility_Location_Name_TC') {
@@ -1943,6 +2039,16 @@
                         facility.details['類型'] = rawData[attr];
                     } else if (attr === 'Difficult_Ch') {
                         facility.details['難度'] = rawData[attr];
+                    } else if (attr === 'Venue_Address_TC') {
+                        facility.details['地址'] = rawData[attr];
+                    } else if (attr === 'Available_Date') {
+                        facility.details['可用日期'] = rawData[attr];
+                    } else if (attr === 'Session_Start_Time') {
+                        facility.details['開始時間'] = rawData[attr];
+                    } else if (attr === 'Session_End_Time') {
+                        facility.details['結束時間'] = rawData[attr];
+                    } else if (attr === 'Available_Courts') {
+                        facility.details['可用場數'] = rawData[attr];
                     } else if (attr === 'Latitude') {
                         facility.latitude = rawData[attr];
                         facility.latDec = convertDMSToDD(rawData[attr]);
@@ -1955,50 +2061,28 @@
 
             // Extract additional common attributes
             const commonAttrs = {
-                // 通用屬性
                 'Address_cn': '地址',
                 'ADDRESS_TC': '地址',
                 'AddressTC': '地址',
-                // 'Address_en': '地址(英文)',
-                // 'ADDRESS_EN': '地址(英文)',
-                // 'AddressEN': '地址(英文)',
                 'Opening_hours_cn': '開放時間',
                 'OpeningHoursTC': '開放時間',
                 'Phone': '電話',
-                // 'TelephoneTC': '電話',
                 'Court_no_cn': '球場數量',
                 'Size_cn': '面積',
                 'Ancillary_facilities_cn': '附屬設施',
                 'Remarks_cn': '備註',
                 'Facilities_b5': '設施',
                 'No__of_Squash_Courts_TC': '壁球場數量',
-
-                // 羽毛球場屬性
-                'Venue_Address_TC': '場地地址',
-                // 'Venue_Address_EN': '場地地址(英文)',
-                'Available_Date': '可用日期',
-                'Session_Start_Time': '開始時間',
-                'Session_End_Time': '結束時間',
-                'Available_Courts': '可用場數',
                 'Venue_Phone_No.': '場地電話',
-
-                // 遠足徑屬性
                 'Section_No': '路段編號',
                 'Trail_ID': '遠足徑ID',
-                // 'Startpt_En': '起點(英文)',
                 'Startpt_Ch': '起點',
-                // 'Finishpt_E': '終點(英文)',
                 'Finishpt_C': '終點',
                 'Tel': '電話',
-                // 'Webpage_En': '網頁(英文)',
                 'Webpage_Ch': '網頁',
                 'Shape_Length': '長度(米)',
-
-                // 燒烤區屬性
                 'FacilityTypeTC': '設施類型',
                 'FacilityDetailsTC': '設施詳情',
-                'OpeningHoursTC': '開放時間',
-                'TelephoneTC': '電話',
                 'FaxNumberTC': '傳真',
                 'EmailAddressTC': '電郵',
                 'WebsiteTC': '網站',
@@ -2019,16 +2103,14 @@
             return facility;
         }
 
-        // Convert DMS (Degrees-Minutes-Seconds) to Decimal Degrees
+        // Convert DMS to Decimal Degrees
         function convertDMSToDD(dms) {
             if (!dms) return null;
 
-            // Check if already decimal
             if (typeof dms === 'number') {
                 return dms;
             }
 
-            // Parse DMS format like "114-11-0" or "114.1234"
             if (dms.includes('-')) {
                 const parts = dms.split('-');
                 if (parts.length >= 3) {
@@ -2043,7 +2125,6 @@
                     return dd;
                 }
             } else {
-                // Try to parse as decimal
                 const dd = parseFloat(dms);
                 if (!isNaN(dd)) return dd;
             }
@@ -2056,13 +2137,10 @@
             const totalFacilities = allFacilities.length;
             let totalGroups = 0;
 
-            // Count groups based on structure
             if (Object.keys(groupedData).length > 0) {
                 if (Array.isArray(groupedData[Object.keys(groupedData)[0]])) {
-                    // Simple grouping
                     totalGroups = Object.keys(groupedData).length;
                 } else {
-                    // Nested grouping - need to count leaf nodes
                     totalGroups = countLeafNodes(groupedData);
                 }
             }
@@ -2105,20 +2183,16 @@
             if (!firstKey) return;
 
             if (Array.isArray(groupedData[firstKey])) {
-                // Simple district-name grouping
                 renderSimpleGrouping(container);
             } else {
-                // Nested grouping - 使用修復的渲染函數
                 renderNestedGroupingFixed(container);
             }
 
-            // Setup facility item click events
             setupFacilityItemEvents();
         }
 
         // Render simple district-name grouping
         function renderSimpleGrouping(container) {
-            // Sort districts alphabetically
             const sortedDistricts = Object.keys(groupedData).sort();
 
             sortedDistricts.forEach(district => {
@@ -2139,7 +2213,6 @@
 
                 container.appendChild(districtAccordion);
 
-                // Add click event
                 const header = districtAccordion.querySelector('.level-1-header');
                 const content = districtAccordion.querySelector('.level-1-content');
 
@@ -2147,7 +2220,6 @@
                     toggleAccordion(this, content);
                 });
 
-                // Add facility items
                 const facilitiesContainer = document.createElement('div');
                 facilities.forEach(facility => {
                     const facilityItem = createFacilityItemElement(facility);
@@ -2170,7 +2242,6 @@
                 const level1Data = groupedData[level1Key];
 
                 if (typeof level1Data === 'object' && !Array.isArray(level1Data)) {
-                    // Has level 2
                     for (const level2Key in level1Data) {
                         const level2Data = level1Data[level2Key];
 
@@ -2178,12 +2249,10 @@
                         let level2Html = '';
 
                         if (Array.isArray(level2Data)) {
-                            // Level 2 is leaf (facilities array)
                             level2Count = level2Data.length;
                             level1Count += level2Data.length;
                             level2Html = level2Data.map(f => createFacilityItemElement(f).outerHTML).join('');
                         } else if (typeof level2Data === 'object') {
-                            // Has level 3
                             for (const level3Key in level2Data) {
                                 const level3Data = level2Data[level3Key];
 
@@ -2191,7 +2260,6 @@
                                 let level3Html = '';
 
                                 if (Array.isArray(level3Data)) {
-                                    // Level 3 is leaf
                                     level3Count = level3Data.length;
                                     level2Count += level3Data.length;
                                     level3Html = level3Data.map(f => createFacilityItemElement(f).outerHTML).join('');
@@ -2217,7 +2285,6 @@
 
                         if (level2Html) {
                             if (level2Html.includes('level-3-header')) {
-                                // Has level 3
                                 level1Html += `
                                     <div class="level-2-header">
                                         <span>
@@ -2231,7 +2298,6 @@
                                     </div>
                                 `;
                             } else {
-                                // Level 2 is leaf
                                 level1Html += `
                                     <div class="level-2-header">
                                         <span>
@@ -2247,7 +2313,6 @@
                         }
                     }
                 } else if (Array.isArray(level1Data)) {
-                    // Level 1 is leaf
                     level1Count = level1Data.length;
                     level1Html = level1Data.map(f => createFacilityItemElement(f).outerHTML).join('');
                 }
@@ -2267,18 +2332,15 @@
 
                 container.appendChild(level1Content);
 
-                // Add click events for all headers
                 const level1Header = level1Content.querySelector('.level-1-header');
                 const level1ContentDiv = level1Content.querySelector('.level-1-content');
                 level1Header.addEventListener('click', () => toggleAccordion(level1Header, level1ContentDiv));
 
-                // Level 2 headers
                 level1Content.querySelectorAll('.level-2-header').forEach(header => {
                     const content = header.nextElementSibling;
                     header.addEventListener('click', () => toggleAccordion(header, content));
                 });
 
-                // Level 3 headers
                 level1Content.querySelectorAll('.level-3-header').forEach(header => {
                     const content = header.nextElementSibling;
                     header.addEventListener('click', () => toggleAccordion(header, content));
@@ -2290,11 +2352,9 @@
         function toggleAccordion(header, content) {
             const isActive = header.classList.contains('active');
 
-            // Toggle active class
             header.classList.toggle('active');
             content.classList.toggle('active');
 
-            // Rotate icon
             const icon = header.querySelector('.fa-chevron-down');
             if (icon) {
                 icon.style.transform = isActive ? 'rotate(0deg)' : 'rotate(180deg)';
@@ -2309,38 +2369,33 @@
 
             let detailsHtml = '';
 
-            // Add essential details based on facility type
-            if (facility.details['地址'] || facility.details['場地地址'] || facility.details['AddressTC']) {
-                const address = facility.details['地址'] || facility.details['場地地址'] || facility.details['AddressTC'];
-                detailsHtml += `
-                    <div class="facility-detail-item">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <span class="facility-detail-text">${address}</span>
-                    </div>
-                `;
+            // 羽毛球場特別處理
+            if (facility.type === '羽毛球場') {
+                detailsHtml += createBadmintonSessionDetails(facility);
+            } else {
+                // 其他設施的通用處理
+                if (facility.details['地址'] || facility.details['場地地址'] || facility.details['AddressTC']) {
+                    const address = facility.details['地址'] || facility.details['場地地址'] || facility.details['AddressTC'];
+                    detailsHtml += `
+                        <div class="facility-detail-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span class="facility-detail-text">${address}</span>
+                        </div>
+                    `;
+                }
+
+                if (facility.details['開放時間'] || facility.details['OpeningHoursTC']) {
+                    const openingHours = (facility.details['開放時間'] || facility.details['OpeningHoursTC']).replace(/<br>/g, ' ').replace(/\r\n/g, ' ');
+                    detailsHtml += `
+                        <div class="facility-detail-item">
+                            <i class="fas fa-clock"></i>
+                            <span class="facility-detail-text">${openingHours}</span>
+                        </div>
+                    `;
+                }
             }
 
-            if (facility.details['開放時間'] || facility.details['OpeningHoursTC']) {
-                const openingHours = (facility.details['開放時間'] || facility.details['OpeningHoursTC']).replace(/<br>/g, ' ').replace(/\r\n/g, ' ');
-                detailsHtml += `
-                    <div class="facility-detail-item">
-                        <i class="fas fa-clock"></i>
-                        <span class="facility-detail-text">${openingHours}</span>
-                    </div>
-                `;
-            }
-
-            if (facility.details['電話'] || facility.details['場地電話'] || facility.details['TelephoneTC']) {
-                const phone = facility.details['電話'] || facility.details['場地電話'] || facility.details['TelephoneTC'];
-                detailsHtml += `
-                    <div class="facility-detail-item">
-                        <i class="fas fa-phone"></i>
-                        <span class="facility-detail-text">${phone}</span>
-                    </div>
-                `;
-            }
-
-            // Add facility-specific details
+            // 添加設施類型
             if (facility.details['設施類型']) {
                 detailsHtml += `
                     <div class="facility-detail-item">
@@ -2350,65 +2405,29 @@
                 `;
             }
 
-            if (facility.details['設施位置']) {
+            // 添加地區
+            if (facility.details['地區']) {
                 detailsHtml += `
                     <div class="facility-detail-item">
                         <i class="fas fa-map-pin"></i>
-                        <span class="facility-detail-text">位置: ${facility.details['設施位置']}</span>
+                        <span class="facility-detail-text">地區: ${facility.details['地區']}</span>
                     </div>
                 `;
             }
 
-            if (facility.details['路段名稱']) {
+            // 為羽毛球場添加可預訂時段標籤
+            if (facility.type === '羽毛球場' && facility.details['最近可用日期']) {
+                const availableClass = parseInt(facility.details['最近可用場數'] || '0') > 0 ? 'available-tag' : 'full-tag';
                 detailsHtml += `
                     <div class="facility-detail-item">
-                        <i class="fas fa-road"></i>
-                        <span class="facility-detail-text">路段: ${facility.details['路段名稱']}</span>
-                    </div>
-                `;
-            }
-
-            if (facility.details['難度']) {
-                detailsHtml += `
-                    <div class="facility-detail-item">
-                        <i class="fas fa-mountain"></i>
-                        <span class="facility-detail-text">難度: ${facility.details['難度']}</span>
-                    </div>
-                `;
-            }
-
-            if (facility.details['長度(米)']) {
-                const length = parseFloat(facility.details['長度(米)']).toFixed(0);
-                detailsHtml += `
-                    <div class="facility-detail-item">
-                        <i class="fas fa-ruler"></i>
-                        <span class="facility-detail-text">長度: ${length}米</span>
-                    </div>
-                `;
-            }
-
-            if (facility.details['可用場數'] && facility.details['可用場數'] !== '0') {
-                detailsHtml += `
-                    <div class="facility-detail-item">
-                        <i class="fas fa-check-circle"></i>
-                        <span class="facility-detail-text" style="color: green;">可用場數: ${facility.details['可用場數']}</span>
-                    </div>
-                `;
-            } else if (facility.details['可用場數'] === '0') {
-                detailsHtml += `
-                    <div class="facility-detail-item">
-                        <i class="fas fa-times-circle"></i>
-                        <span class="facility-detail-text" style="color: red;">已滿</span>
-                    </div>
-                `;
-            }
-
-            if (facility.details['設施詳情']) {
-                const details = facility.details['設施詳情'].replace(/<br\/>/g, ', ').replace(/<br>/g, ', ').replace(/\r\n/g, ', ');
-                detailsHtml += `
-                    <div class="facility-detail-item">
-                        <i class="fas fa-info-circle"></i>
-                        <span class="facility-detail-text">設施: ${details}</span>
+                        <i class="fas fa-calendar-check"></i>
+                        <span class="facility-detail-text">
+                            <span class="datetime-tag ${availableClass}">
+                                ${formatDateForDisplay(facility.details['最近可用日期'])} 
+                                ${facility.details['最近開始時間']}-${facility.details['最近結束時間']}
+                                ${parseInt(facility.details['最近可用場數'] || '0') > 0 ? ` (${facility.details['最近可用場數']}場)` : ' (已滿)'}
+                            </span>
+                        </span>
                     </div>
                 `;
             }
@@ -2423,27 +2442,57 @@
             return facilityItem;
         }
 
+        // 創建羽毛球場時段詳情
+        function createBadmintonSessionDetails(facility) {
+            let html = '';
+
+            // 地址
+            if (facility.details['地址']) {
+                html += `
+                    <div class="facility-detail-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span class="facility-detail-text">${facility.details['地址']}</span>
+                    </div>
+                `;
+            }
+
+            // 可預訂時段數量
+            if (facility.details['可預訂時段']) {
+                html += `
+                    <div class="facility-detail-item">
+                        <i class="fas fa-clock"></i>
+                        <span class="facility-detail-text">可預訂時段: ${facility.details['可預訂時段']}個</span>
+                    </div>
+                `;
+            }
+
+            return html;
+        }
+
+        // 日期格式轉換
+        function formatDateForDisplay(dateString) {
+            const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (match) {
+                return `${match[1]}/${match[2]}/${match[3]}`;
+            }
+            return dateString;
+        }
+
         // Setup facility item click events
         function setupFacilityItemEvents() {
             document.querySelectorAll('.facility-item').forEach(item => {
                 item.addEventListener('click', function () {
-                    // Remove active class from all facility items
                     document.querySelectorAll('.facility-item').forEach(i => {
                         i.classList.remove('active');
                     });
 
-                    // Add active class to clicked item
                     this.classList.add('active');
 
-                    // Find and highlight the corresponding facility
                     const facilityId = this.dataset.facilityId;
                     const facility = allFacilities.find(f => f.id === facilityId);
 
                     if (facility) {
                         selectFacility(facility);
-                        window.facility = facility
-                        window.facilitiesLayer = facilitiesLayer;
-                        // facility.openPopup();
                     }
                 });
             });
@@ -2459,15 +2508,11 @@
 
             let validMarkersCount = 0;
 
-            // 如果當前是遠足徑，只創建標記，不創建線條圖層（預設不顯示路線）
             if (currentFacilityType === '遠足徑') {
                 // 不創建任何遠足徑路線線條，只在點擊時創建
-                // 所有遠足徑標記仍會顯示
             }
 
-            // 為所有設施創建標記
             allFacilities.forEach(facility => {
-                // Get coordinates
                 let lat, lon;
 
                 if (facility.latDec && facility.lonDec) {
@@ -2478,7 +2523,12 @@
                     lon = convertDMSToDD(facility.longitude);
                 }
 
-                // 對於遠足徑，只創建標記不創建點
+                // 對於羽毛球場，如果沒有座標，使用香港中心點
+                if (currentFacilityType === '羽毛球場' && (!lat || !lon || isNaN(lat) || isNaN(lon))) {
+                    lat = 22.3193 + (Math.random() * 0.1 - 0.05); // 隨機分佈
+                    lon = 114.1694 + (Math.random() * 0.1 - 0.05);
+                }
+
                 if (currentFacilityType === '遠足徑' && (!lat || !lon || isNaN(lat) || isNaN(lon))) {
                     return;
                 }
@@ -2490,7 +2540,6 @@
 
                 validMarkersCount++;
 
-                // Create marker with color based on facility type
                 const markerColor = getFacilityColor(facility.type);
                 const marker = L.circleMarker([lat, lon], {
                     radius: currentFacilityType === '遠足徑' ? 0 : 8,
@@ -2501,7 +2550,6 @@
                     fillOpacity: currentFacilityType === '遠足徑' ? 0.6 : 0.8
                 });
 
-                // Create popup content
                 let popupContent = createPopupContent(facility);
 
                 marker.bindPopup(popupContent, {
@@ -2509,18 +2557,15 @@
                     minWidth: 200
                 });
 
-                // Add click event
                 marker.on('click', function () {
                     selectFacility(facility);
 
-                    // Find and highlight the corresponding list item
                     document.querySelectorAll('.facility-item').forEach(item => {
                         item.classList.remove('active');
                         if (item.dataset.facilityId === facility.id) {
                             item.classList.add('active');
                             item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                            // Expand parent accordions
                             expandParentAccordions(item);
                         }
                     });
@@ -2534,17 +2579,14 @@
 
         // 創建單一遠足徑路線
         function createHikingTrailForFacility(facility) {
-            // 清除之前的遠足徑圖層
             if (hikingTrailsLayer) {
                 map.removeLayer(hikingTrailsLayer);
                 hikingTrailsLayer = null;
             }
 
-            // 創建新的圖層組
             hikingTrailsLayer = L.layerGroup().addTo(map);
 
             if (facility.geometry && facility.geometry.type === 'MultiLineString' && facility.geometry.coordinates) {
-                // 創建多線段路線
                 const polyline = L.polyline([], {
                     color: '#5bc0de',
                     weight: 4,
@@ -2552,7 +2594,6 @@
                     smoothFactor: 1
                 });
 
-                // 將MultiLineString的座標轉換為Polyline可用的格式
                 let allCoordinates = [];
                 facility.geometry.coordinates.forEach(lineString => {
                     const latlngs = lineString.map(coord => [coord[1], coord[0]]);
@@ -2560,10 +2601,8 @@
                     allCoordinates = allCoordinates.concat(latlngs);
                 });
 
-                // 添加到圖層組
                 polyline.addTo(hikingTrailsLayer);
 
-                // 創建起點標記（第一個座標點）
                 if (allCoordinates.length > 0) {
                     const startPoint = allCoordinates[0];
                     const startMarker = L.marker(startPoint, {
@@ -2578,7 +2617,6 @@
                     startMarker.addTo(hikingTrailsLayer);
                 }
 
-                // 創建終點標記（最後一個座標點）
                 if (allCoordinates.length > 1) {
                     const endPoint = allCoordinates[allCoordinates.length - 1];
                     const endMarker = L.marker(endPoint, {
@@ -2593,7 +2631,6 @@
                     endMarker.addTo(hikingTrailsLayer);
                 }
 
-                // 創建彈出視窗內容
                 let popupContent = createPopupContent(facility);
 
                 polyline.bindPopup(popupContent, {
@@ -2601,18 +2638,15 @@
                     minWidth: 200
                 });
 
-                // 為線條添加點擊事件
                 polyline.on('click', function (e) {
                     selectFacility(facility);
 
-                    // 找到並高亮對應的列表項目
                     document.querySelectorAll('.facility-item').forEach(item => {
                         item.classList.remove('active');
                         if (item.dataset.facilityId === facility.id) {
                             item.classList.add('active');
                             item.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                            // 展開父級手風琴
                             expandParentAccordions(item);
                         }
                     });
@@ -2646,7 +2680,6 @@
 
         // Darken color for marker border
         function darkenColor(color) {
-            // Simple darkening
             return color.replace(/^#/, '').replace(/../g, hex =>
                 ('0' + Math.max(0, parseInt(hex, 16) - 40).toString(16)).slice(-2)
             );
@@ -2659,8 +2692,10 @@
         <div style="margin-bottom: 5px;"><strong>設施類型:</strong> ${facility.type}</div>
     `;
 
-            // 如果是遠足徑，特別顯示起點和終點
-            if (facility.type === '遠足徑') {
+            // 特別處理羽毛球場的可預訂時段
+            if (facility.type === '羽毛球場') {
+                content += createBadmintonPopupContent(facility);
+            } else if (facility.type === '遠足徑') {
                 content += `
             <div style="margin-bottom: 5px; background-color: #f8f9fa; padding: 5px; border-radius: 3px;">
                 <strong style="color: #5cb85c;">起點:</strong> ${facility.details['起點'] || '未標明'}<br>
@@ -2671,10 +2706,57 @@
 
             // Add all details
             for (const [key, value] of Object.entries(facility.details)) {
-                if (value && value !== 'N.A.' && value !== 'null' && value !== 'undefined' && key !== '起點' && key !== '終點') {
+                if (value && value !== 'N.A.' && value !== 'null' && value !== 'undefined' && key !== '起點' && key !== '終點' && key !== '時段詳情') {
                     const cleanValue = String(value).replace(/<br\/>/g, '<br>').replace(/<br>/g, '<br>').replace(/\r\n/g, '<br>');
                     content += `<div style="margin-bottom: 3px;"><strong>${key}:</strong> ${cleanValue}</div>`;
                 }
+            }
+
+            return content;
+        }
+
+        // 創建羽毛球場彈出視窗內容
+        function createBadmintonPopupContent(facility) {
+            let content = '';
+
+            if (facility.details['地址']) {
+                content += `<div style="margin-bottom: 5px;"><strong>地址:</strong> ${facility.details['地址']}</div>`;
+            }
+
+            if (facility.details['地區']) {
+                content += `<div style="margin-bottom: 5px;"><strong>地區:</strong> ${facility.details['地區']}</div>`;
+            }
+
+            // 顯示可預訂時段
+            if (facility.details['時段詳情'] && Array.isArray(facility.details['時段詳情'])) {
+                const sessions = facility.details['時段詳情'];
+                content += `
+                    <div style="background-color: #e8f4ff; padding: 10px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #4a90e2;">
+                        <strong style="color: #2c6c91; display: block; margin-bottom: 8px;">🏸 可預訂時段 (共${sessions.length}個)</strong>
+                `;
+
+                // 顯示前5個時段
+                const displaySessions = sessions.slice(0, 5);
+                displaySessions.forEach(session => {
+                    const availableClass = parseInt(session.availableCourts || '0') > 0 ? 'available-tag' : 'full-tag';
+                    const availableText = parseInt(session.availableCourts || '0') > 0 ? `(${session.availableCourts}場可用)` : '(已滿)';
+                    
+                    content += `
+                        <div style="margin-bottom: 5px; padding: 5px; background-color: white; border-radius: 3px;">
+                            <strong>${session.date}</strong><br>
+                            <span>${session.startTime} - ${session.endTime}</span><br>
+                            <span class="${availableClass}" style="padding: 2px 6px; border-radius: 3px; font-size: 0.9em;">
+                                ${availableText}
+                            </span>
+                        </div>
+                    `;
+                });
+
+                if (sessions.length > 5) {
+                    content += `<div style="font-size: 0.9em; color: #666; margin-top: 5px;">... 還有 ${sessions.length - 5} 個時段</div>`;
+                }
+
+                content += `</div>`;
             }
 
             return content;
@@ -2704,32 +2786,25 @@
 
         // Select and highlight a facility
         function selectFacility(facility) {
-            // Clear previous selection
             if (selectedFacility) {
-                // 檢查這個圖層是否仍然在地圖上
                 if (map.hasLayer(selectedFacility)) {
                     map.removeLayer(selectedFacility);
                 }
                 selectedFacility = null;
             }
 
-            // 如果是遠足徑，清除之前顯示的路線並創建新的
             if (currentFacilityType === '遠足徑') {
-                // 清除之前的遠足徑路線
                 if (hikingTrailsLayer) {
                     map.removeLayer(hikingTrailsLayer);
                     hikingTrailsLayer = null;
                 }
 
-                // 創建新的遠足徑路線（包含起點和終點）
                 if (facility.geometry) {
                     createHikingTrailForFacility(facility);
                 }
 
-                // 更新當前遠足徑ID
                 currentTrailId = facility.id;
             } else {
-                // 如果不是遠足徑，清除任何遠足徑圖層
                 if (hikingTrailsLayer) {
                     map.removeLayer(hikingTrailsLayer);
                     hikingTrailsLayer = null;
@@ -2737,7 +2812,6 @@
                 }
             }
 
-            // Get coordinates (使用線段的中間點作為標記位置)
             let lat, lon;
 
             if (facility.latDec && facility.lonDec) {
@@ -2748,12 +2822,16 @@
                 lon = convertDMSToDD(facility.longitude);
             }
 
-            // 對於遠足徑，如果沒有座標，嘗試從幾何數據中獲取中間點
+            // 對於羽毛球場，如果沒有座標，使用香港中心點
+            if (currentFacilityType === '羽毛球場' && (!lat || !lon || isNaN(lat) || isNaN(lon))) {
+                lat = 22.3193;
+                lon = 114.1694;
+            }
+
             if (currentFacilityType === '遠足徑' && (!lat || !lon || isNaN(lat) || isNaN(lon))) {
                 if (facility.geometry && facility.geometry.coordinates) {
                     const coords = facility.geometry.coordinates;
                     if (coords[0] && Array.isArray(coords[0]) && coords[0][0] && Array.isArray(coords[0][0])) {
-                        // 取線段中間的點
                         const midIndex = Math.floor(coords[0].length / 2);
                         if (coords[0][midIndex] && Array.isArray(coords[0][midIndex]) && coords[0][midIndex].length >= 2) {
                             lon = coords[0][midIndex][0];
@@ -2769,9 +2847,7 @@
                 return;
             }
 
-            // 對於遠足徑，我們仍然創建一個標記（但可以選擇隱藏）
             if (currentFacilityType !== '遠足徑') {
-                // Create highlighted marker for non-hiking facilities
                 selectedFacility = L.circleMarker([lat, lon], {
                     radius: currentFacilityType === '遠足徑' ? 0 : 12,
                     fillColor: '#ffcc00',
@@ -2781,21 +2857,16 @@
                     fillOpacity: currentFacilityType === '遠足徑' ? 0.6 : 0.9
                 });
 
-                // Create detailed popup content
                 let popupContent = createPopupContent(facility);
 
-                // Bind and open popup
                 selectedFacility.bindPopup(popupContent, {
                     maxWidth: 300,
                     minWidth: 200
                 }).openPopup();
             }
 
-            // Pan to the selected facility
-            // 對於遠足徑，使用較小的縮放級別以顯示完整路線
             map.setView([lat, lon], currentFacilityType === '遠足徑' ? 13 : 16);
 
-            // Show notification
             showNotification(`✅ 已選取: ${facility.name} (${facility.type})`);
         }
 
@@ -2804,7 +2875,6 @@
             const searchLower = searchTerm.toLowerCase().trim();
 
             if (!searchLower) {
-                // Show all facilities
                 document.querySelectorAll('.facility-item').forEach(item => {
                     item.style.display = 'block';
                 });
@@ -2819,7 +2889,6 @@
 
             let visibleCount = 0;
 
-            // Filter facility items
             document.querySelectorAll('.facility-item').forEach(item => {
                 const facilityName = item.querySelector('.facility-name').textContent.toLowerCase();
                 const details = item.querySelector('.facility-details').textContent.toLowerCase();
@@ -2828,14 +2897,12 @@
                     item.style.display = 'block';
                     visibleCount++;
 
-                    // Ensure parent accordions are visible and expanded
                     expandParentAccordionsForItem(item);
                 } else {
                     item.style.display = 'none';
                 }
             });
 
-            // Hide accordions with no visible facilities
             document.querySelectorAll('.multi-level-accordion').forEach(accordion => {
                 const visibleItems = accordion.querySelectorAll('.facility-item[style="display: block"]');
                 if (visibleItems.length === 0) {
@@ -2845,7 +2912,6 @@
                 }
             });
 
-            // Update visible count
             document.getElementById('visibleFacilities').textContent = visibleCount;
         }
 
@@ -2860,7 +2926,6 @@
                     current.classList.contains('level-5-content')) {
                     const header = current.previousElementSibling;
                     if (header) {
-                        // Make sure accordion is expanded
                         if (!header.classList.contains('active')) {
                             header.classList.add('active');
                             current.classList.add('active');
@@ -2876,10 +2941,8 @@
 
         // Show temporary notification
         function showNotification(message) {
-            // Remove existing notifications
             document.querySelectorAll('.notification').forEach(n => n.remove());
 
-            // Create notification element
             const notification = document.createElement('div');
             notification.className = 'notification';
             notification.style.cssText = `
@@ -2897,7 +2960,6 @@
                 animation: fadeInOut 3s ease-in-out;
             `;
 
-            // Add keyframes for animation
             const style = document.createElement('style');
             style.textContent = `
                 @keyframes fadeInOut {
@@ -2912,7 +2974,6 @@
             notification.textContent = message;
             document.body.appendChild(notification);
 
-            // Remove after animation completes
             setTimeout(() => {
                 notification.remove();
                 style.remove();
@@ -2920,5 +2981,4 @@
         }
     </script>
 </body>
-
 </html>
