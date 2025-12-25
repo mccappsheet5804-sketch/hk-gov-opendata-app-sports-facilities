@@ -839,7 +839,7 @@
 
 <body>
     <div class="header">
-        <h1><i class="fas fa-futbol"></i> 🏃‍♂️ 體育設施查詢系統</h1>
+        <h1><i class="fas fa-futbol"></i> 體育設施查詢系統</h1>
         <p>查詢全港各區體育設施資訊，包括足球場⚽、網球場🎾、游泳池🏊、健身室💪、羽毛球場🏸、遠足徑🥾及燒烤區🍖等各類運動設施</p>
     </div>
 
@@ -980,7 +980,7 @@
                         <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="accordion-content" id="contentFacilities">
-                        <div class="search-box">
+                        <div class="search-box" hidden>
                             <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜尋設施名稱、地址或地區...">
                         </div>
 
@@ -1026,30 +1026,62 @@
                         </div>
 
                         <div class="legend">
-                            <label><i class="fas fa-layer-group"></i> 圖例</label>
+                            <p style="margin-bottom:10px"><i class="fas fa-layer-group"></i> 圖例</p>
                             <div class="legend-item">
                                 <div class="legend-color" style="background-color: #ff6b6b;"></div>
-                                <span> 體育設施</span>
+                                <span> 十一人足球場</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #ff8e6b;"></div>
+                                <span> 五人硬地足球場</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #ffb16b;"></div>
+                                <span> 七人硬地足球場</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-color" style="background-color: #4a90e2;"></div>
-                                <span> 已選取設施</span>
+                                <span> 運動場</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-color" style="background-color: #5cb85c;"></div>
-                                <span>️ 分類級別 1</span>
+                                <span> 網球場</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #4cae4c;"></div>
+                                <span> 網球練習場</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-color" style="background-color: #f0ad4e;"></div>
-                                <span>️ 分類級別 2</span>
+                                <span> 健身室</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #5bc0de;"></div>
+                                <span> 游泳池</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-color" style="background-color: #d9534f;"></div>
-                                <span> 燒烤區</span>
+                                <span> 射箭場</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #aa66cc;"></div>
+                                <span> 壁球場</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #ff4444;"></div>
+                                <span> 單車</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #4a90e2;"></div>
+                                <span> 羽毛球場</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-color" style="background-color: #5bc0de;"></div>
                                 <span> 遠足徑</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #d9534f;"></div>
+                                <span> 燒烤區</span>
                             </div>
                         </div>
 
@@ -1384,6 +1416,8 @@
             // Facility type selector
             document.querySelectorAll('.facility-type-btn').forEach(btn => {
                 btn.addEventListener('click', function () {
+                    document.querySelector(`.accordion-header.active`).click(); // Close any open accordion
+
                     // Remove active class from all buttons
                     document.querySelectorAll('.facility-type-btn').forEach(b => {
                         b.classList.remove('active');
@@ -1931,7 +1965,7 @@
                 'Opening_hours_cn': '開放時間',
                 'OpeningHoursTC': '開放時間',
                 'Phone': '電話',
-                'TelephoneTC': '電話',
+                // 'TelephoneTC': '電話',
                 'Court_no_cn': '球場數量',
                 'Size_cn': '面積',
                 'Ancillary_facilities_cn': '附屬設施',
@@ -1942,11 +1976,11 @@
                 // 羽毛球場屬性
                 'Venue_Address_TC': '場地地址',
                 // 'Venue_Address_EN': '場地地址(英文)',
-                'Venue_Phone_No.': '場地電話',
                 'Available_Date': '可用日期',
                 'Session_Start_Time': '開始時間',
                 'Session_End_Time': '結束時間',
                 'Available_Courts': '可用場數',
+                'Venue_Phone_No.': '場地電話',
 
                 // 遠足徑屬性
                 'Section_No': '路段編號',
@@ -2495,7 +2529,7 @@
                 facilitiesLayer.addLayer(marker);
             });
 
-            console.log(`Created ${validMarkersCount} markers out of ${allFacilities.length} facilities`);
+            showNotification(`已建立 ${validMarkersCount} 個標記，共 ${allFacilities.length} 個設施`);
         }
 
         // 創建單一遠足徑路線
