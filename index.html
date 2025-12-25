@@ -1925,9 +1925,9 @@
                 'Address_cn': '地址',
                 'ADDRESS_TC': '地址',
                 'AddressTC': '地址',
-                'Address_en': '地址(英文)',
-                'ADDRESS_EN': '地址(英文)',
-                'AddressEN': '地址(英文)',
+                // 'Address_en': '地址(英文)',
+                // 'ADDRESS_EN': '地址(英文)',
+                // 'AddressEN': '地址(英文)',
                 'Opening_hours_cn': '開放時間',
                 'OpeningHoursTC': '開放時間',
                 'Phone': '電話',
@@ -1941,7 +1941,7 @@
 
                 // 羽毛球場屬性
                 'Venue_Address_TC': '場地地址',
-                'Venue_Address_EN': '場地地址(英文)',
+                // 'Venue_Address_EN': '場地地址(英文)',
                 'Venue_Phone_No.': '場地電話',
                 'Available_Date': '可用日期',
                 'Session_Start_Time': '開始時間',
@@ -1951,12 +1951,12 @@
                 // 遠足徑屬性
                 'Section_No': '路段編號',
                 'Trail_ID': '遠足徑ID',
-                'Startpt_En': '起點(英文)',
+                // 'Startpt_En': '起點(英文)',
                 'Startpt_Ch': '起點',
-                'Finishpt_E': '終點(英文)',
+                // 'Finishpt_E': '終點(英文)',
                 'Finishpt_C': '終點',
                 'Tel': '電話',
-                'Webpage_En': '網頁(英文)',
+                // 'Webpage_En': '網頁(英文)',
                 'Webpage_Ch': '網頁',
                 'Shape_Length': '長度(米)',
 
@@ -2407,6 +2407,9 @@
 
                     if (facility) {
                         selectFacility(facility);
+                        window.facility = facility
+                        window.facilitiesLayer = facilitiesLayer;
+                        // facility.openPopup();
                     }
                 });
             });
@@ -2640,11 +2643,6 @@
                 }
             }
 
-            // Add coordinates if available
-            if (facility.latDec && facility.lonDec) {
-                content += `<div style="margin-top: 8px; font-size: 0.9em; color: #666;"><strong>座標:</strong> ${facility.latDec.toFixed(6)}, ${facility.lonDec.toFixed(6)}</div>`;
-            }
-
             return content;
         }
 
@@ -2741,12 +2739,12 @@
             if (currentFacilityType !== '遠足徑') {
                 // Create highlighted marker for non-hiking facilities
                 selectedFacility = L.circleMarker([lat, lon], {
-                    radius: 12,
+                    radius: currentFacilityType === '遠足徑' ? 0 : 12,
                     fillColor: '#ffcc00',
                     color: '#ff9900',
                     weight: 3,
                     opacity: 1,
-                    fillOpacity: 0.9
+                    fillOpacity: currentFacilityType === '遠足徑' ? 0.6 : 0.9
                 });
 
                 // Create detailed popup content
@@ -2757,9 +2755,6 @@
                     maxWidth: 300,
                     minWidth: 200
                 }).openPopup();
-
-                // Add to map
-                selectedFacility.addTo(map);
             }
 
             // Pan to the selected facility
