@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>體育設施查詢系統 - 香港</title>
+    <title>體育設施查詢系統</title>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <!-- Leaflet Draw CSS -->
@@ -716,9 +716,11 @@
         .loading {
             display: none;
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* transform: translate(-50%, -50%); */
             background-color: rgba(255, 255, 255, 0.9);
             padding: 20px 30px;
             border-radius: 8px;
@@ -932,16 +934,16 @@
 
                         <div class="facility-selector" id="facilitySelector">
                             <button class="facility-type-btn active"
-                                data-url="https://portal.csdi.gov.hk/server/services/common/afcd_rcd_1665568199103_4360/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=Hiking_Trails&outputFormat=geojson"
-                                data-component="遠足徑">
-                                <i class="fas fa-hiking"></i>
-                                <span class="facility-type-name">遠足徑</span>
-                            </button>
-                            <button class="facility-type-btn"
                                 data-url="https://portal.csdi.gov.hk/server/services/common/lcsd_rcd_1634540957025_61259/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=LCSD_BBQ&outputFormat=geojson"
                                 data-component="燒烤區">
                                 <i class="fas fa-fire"></i>
                                 <span class="facility-type-name">燒烤區</span>
+                            </button>
+                            <button class="facility-type-btn"
+                                data-url="https://portal.csdi.gov.hk/server/services/common/afcd_rcd_1665568199103_4360/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=Hiking_Trails&outputFormat=geojson"
+                                data-component="遠足徑">
+                                <i class="fas fa-hiking"></i>
+                                <span class="facility-type-name">遠足徑</span>
                             </button>
                             <button class="facility-type-btn"
                                 data-url="https://www.lcsd.gov.hk/datagovhk/facility/facility-swimming-pools.json"
@@ -1167,8 +1169,11 @@
         <div class="map-container">
             <div id="map"></div>
             <div class="loading" id="loadingIndicator">
-                <div class="spinner"></div>
-                <p id="loadingText">⏳ 正在載入體育設施數據...</p>
+                <div style="position:relative;top:20%">
+                    <div class="spinner"></div>
+                    <p>⏳</p>
+                    <p id="loadingText">正在載入羽毛球場數據...</p>
+                </div>
             </div>
             <!-- Layer Control Panel -->
             <div class="layer-control" id="layerControl" style="display: none;">
@@ -1543,7 +1548,7 @@
             const loadingIndicator = document.getElementById('loadingIndicator');
             const loadingText = document.getElementById('loadingText');
 
-            loadingText.textContent = `⏳ 正在載入${facilityType}數據...`;
+            loadingText.textContent = `正在載入${facilityType}數據...`;
             loadingIndicator.style.display = 'block';
 
             const config = FACILITY_CONFIG[facilityType];
@@ -1653,7 +1658,7 @@
             }
 
             // Update header to show current facility type
-            document.querySelector('.header h1').innerHTML = `<i class="fas fa-futbol"></i> 🏃‍♂️ ${facilityType}查詢系統`;
+            document.querySelector('.header h1').innerHTML = `<i class="fas fa-futbol"></i> ${facilityType}查詢系統`;
             document.querySelector('.header p').textContent = `查詢全港各區${facilityType}資訊`;
 
             // Process data based on grouping type
@@ -1669,9 +1674,6 @@
                     break;
                 case 'dataset-search01-name':
                     processDatasetSearch01NameGrouping(data, facilityType);
-                    break;
-                case 'badminton-grouping-fixed':
-                    processBadmintonGroupingFixed(data, facilityType);
                     break;
                 case 'badminton-booking-slots':
                     processBadmintonBookingSlots(data, facilityType);
@@ -1772,8 +1774,8 @@
                     rawData: venue,
                     latDec: null,
                     lonDec: null,
-                    latitude: null,
-                    longitude: null,
+                    latitude: parseFloat(item.Venue_Latitude),
+                    longitude: parseFloat(item.Venue_Longitude),
                     details: {
                         '地區': venue.district,
                         '地址': venue.address,
@@ -1781,7 +1783,6 @@
                         '時段詳情': venue.sessions
                     }
                 };
-
                 // 添加可預訂時段
                 if (venue.sessions.length > 0) {
                     const latestSession = venue.sessions[0];
@@ -2493,6 +2494,7 @@
 
                     if (facility) {
                         selectFacility(facility);
+                        console.log(facility)
                     }
                 });
             });
@@ -2740,7 +2742,7 @@
                 displaySessions.forEach(session => {
                     const availableClass = parseInt(session.availableCourts || '0') > 0 ? 'available-tag' : 'full-tag';
                     const availableText = parseInt(session.availableCourts || '0') > 0 ? `(${session.availableCourts}場可用)` : '(已滿)';
-                    
+
                     content += `
                         <div style="margin-bottom: 5px; padding: 5px; background-color: white; border-radius: 3px;">
                             <strong>${session.date}</strong><br>
@@ -2981,4 +2983,5 @@
         }
     </script>
 </body>
+
 </html>
