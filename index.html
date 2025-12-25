@@ -34,7 +34,7 @@
                 min-width: 150px;
                 font-size: 0.9rem;
             }
-            
+
             .leaflet-popup {
                 max-width: 250px !important;
             }
@@ -839,8 +839,8 @@
 
 <body>
     <div class="header">
-        <h1><i class="fas fa-futbol"></i> 體育設施查詢系統</h1>
-        <p>查詢全港各區體育設施資訊，包括足球場、網球場、游泳池、健身室、羽毛球場、遠足徑及燒烤區等各類運動設施</p>
+        <h1><i class="fas fa-futbol"></i> 🏃‍♂️ 體育設施查詢系統</h1>
+        <p>查詢全港各區體育設施資訊，包括足球場⚽、網球場🎾、游泳池🏊、健身室💪、羽毛球場🏸、遠足徑🥾及燒烤區🍖等各類運動設施</p>
     </div>
 
     <div class="container">
@@ -955,20 +955,20 @@
                         <div class="stats">
                             <div class="stat-item">
                                 <div class="stat-value" id="totalFacilities">0</div>
-                                <div class="stat-label">總數</div>
+                                <div class="stat-label">📊 總數</div>
                             </div>
                             <div class="stat-item">
                                 <div class="stat-value" id="totalDistricts">0</div>
-                                <div class="stat-label">地區/類別</div>
+                                <div class="stat-label">🗺️ 地區/類別</div>
                             </div>
                             <div class="stat-item">
                                 <div class="stat-value" id="visibleFacilities">0</div>
-                                <div class="stat-label">顯示中</div>
+                                <div class="stat-label">👁️ 顯示中</div>
                             </div>
                         </div>
 
                         <div class="cache-status" id="cacheStatus">
-                            快取狀態: 未使用
+                            💾 快取狀態: 未使用
                         </div>
                     </div>
                 </div>
@@ -981,7 +981,7 @@
                     </div>
                     <div class="accordion-content" id="contentFacilities">
                         <div class="search-box">
-                            <input type="text" id="searchInput" class="search-input" placeholder="搜尋設施名稱、地址或地區...">
+                            <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜尋設施名稱、地址或地區...">
                         </div>
 
                         <div id="facilitiesList">
@@ -1029,27 +1029,27 @@
                             <label><i class="fas fa-layer-group"></i> 圖例</label>
                             <div class="legend-item">
                                 <div class="legend-color" style="background-color: #ff6b6b;"></div>
-                                <span>體育設施</span>
+                                <span> 體育設施</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-color" style="background-color: #4a90e2;"></div>
-                                <span>已選取設施</span>
+                                <span> 已選取設施</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-color" style="background-color: #5cb85c;"></div>
-                                <span>分類級別 1</span>
+                                <span>️ 分類級別 1</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-color" style="background-color: #f0ad4e;"></div>
-                                <span>分類級別 2</span>
+                                <span>️ 分類級別 2</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-color" style="background-color: #d9534f;"></div>
-                                <span>燒烤區</span>
+                                <span> 燒烤區</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-color" style="background-color: #5bc0de;"></div>
-                                <span>遠足徑</span>
+                                <span> 遠足徑</span>
                             </div>
                         </div>
 
@@ -1071,7 +1071,7 @@
             <div id="map"></div>
             <div class="loading" id="loadingIndicator">
                 <div class="spinner"></div>
-                <p id="loadingText">正在載入體育設施數據...</p>
+                <p id="loadingText">⏳ 正在載入體育設施數據...</p>
             </div>
             <!-- Layer Control Panel -->
             <div class="layer-control" id="layerControl" style="display: none;">
@@ -1111,6 +1111,7 @@
         let currentFacilityType = null;
         let currentUrl = null;
         let groupedData = {};
+        let currentTrailId = null; // 新增：追踪當前顯示的遠足徑ID
 
         // Cache management
         const dataCache = {
@@ -1220,21 +1221,16 @@
                 essentialAttributes: ['GIHS', 'District_cn', 'Name_cn', 'Latitude', 'Longitude']
             },
 
-            // 新增的羽毛球場配置
             '羽毛球場': {
                 url: 'https://data.smartplay.lcsd.gov.hk/rest/cms/api/v1/publ/contents/open-data/badminton/file',
-                grouping: 'badminton-grouping-fixed', // 修改分組類型
+                grouping: 'badminton-grouping-fixed',
                 essentialAttributes: ['GIHS', 'District_Name_TC', 'Venue_Name_TC', 'Facility_Type_Name_TC', 'Facility_Location_Name_TC']
             },
-
-            // 新增的遠足徑配置
             '遠足徑': {
                 url: 'https://portal.csdi.gov.hk/server/services/common/afcd_rcd_1665568199103_4360/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=Hiking_Trails&outputFormat=geojson',
-                grouping: 'hiking-trails-grouping-fixed', // 修改分組類型
+                grouping: 'hiking-trails-grouping-fixed',
                 essentialAttributes: ['OBJECTID', 'Region_Ch', 'C_NAME', 'Trail_name_Ch', 'Type_Ch', 'Difficult_Ch']
             },
-
-            // 新增的燒烤區配置
             '燒烤區': {
                 url: 'https://portal.csdi.gov.hk/server/services/common/lcsd_rcd_1634540957025_61259/MapServer/WFSServer?service=wfs&request=GetFeature&typenames=LCSD_BBQ&outputFormat=geojson',
                 grouping: 'bbq-grouping',
@@ -1425,7 +1421,7 @@
         function updateCacheStatus() {
             const stats = dataCache.getStats();
             const statusElement = document.getElementById('cacheStatus');
-            statusElement.textContent = `快取: ${stats.count} 個項目 (${stats.size})`;
+            statusElement.textContent = `💾 快取: ${stats.count} 個項目 (${stats.size})`;
         }
 
         // Load facility data from API
@@ -1433,12 +1429,12 @@
             const loadingIndicator = document.getElementById('loadingIndicator');
             const loadingText = document.getElementById('loadingText');
 
-            loadingText.textContent = `正在載入${facilityType}數據...`;
+            loadingText.textContent = `⏳ 正在載入${facilityType}數據...`;
             loadingIndicator.style.display = 'block';
 
             const config = FACILITY_CONFIG[facilityType];
             if (!config) {
-                showNotification(`無法找到 ${facilityType} 的配置`);
+                showNotification(`❌ 無法找到 ${facilityType} 的配置`);
                 loadingIndicator.style.display = 'none';
                 return;
             }
@@ -1457,7 +1453,7 @@
                         console.log(`Using cached data for ${facilityType}`);
                         processFacilityData(data, facilityType, config);
                         loadingIndicator.style.display = 'none';
-                        showNotification(`已載入快取的 ${facilityType} 數據`);
+                        showNotification(`✅ 已載入快取的 ${facilityType} 數據`);
                         return;
                     }
                 }
@@ -1466,7 +1462,7 @@
                 console.log(`Fetching from: ${config.url}`);
 
                 let response;
-                
+
                 // 使用proxy處理CORS問題
                 try {
                     const proxyUrl = PROXY_URL + config.url;
@@ -1482,7 +1478,10 @@
                 }
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
+                    // throw new Error(`HTTP error! Status: ${response.status}`);
+                    alert(`HTTP error! Status: ${response.status}`);
+                    window.open(PROXY_URL, '_blank');
+                    return;
                 }
 
                 data = await response.json();
@@ -1496,7 +1495,7 @@
 
             } catch (error) {
                 console.error(`Error loading ${facilityType} data:`, error);
-                showNotification(`無法載入${facilityType}數據，請檢查網絡連接或稍後再試。`);
+                showNotification(`❌ 無法載入${facilityType}數據，請檢查網絡連接或稍後再試。`);
 
                 // Try direct fetch without proxy as fallback
                 try {
@@ -1505,7 +1504,7 @@
                     if (directResponse.ok) {
                         const directData = await directResponse.json();
                         processFacilityData(directData, facilityType, config);
-                        showNotification('已使用直接連接載入數據');
+                        showNotification('✅ 已使用直接連接載入數據');
                         return;
                     }
                 } catch (directError) {
@@ -1530,7 +1529,9 @@
         // Process facility data based on configuration
         function processFacilityData(data, facilityType, config) {
             allFacilities = [];
+            allHikingTrails = [];
             groupedData = {};
+            currentTrailId = null; // 重置當前遠足徑ID
 
             // Clear previous hiking trails layer if exists
             if (hikingTrailsLayer) {
@@ -1539,7 +1540,7 @@
             }
 
             // Update header to show current facility type
-            document.querySelector('.header h1').innerHTML = `<i class="fas fa-futbol"></i> ${facilityType}查詢系統`;
+            document.querySelector('.header h1').innerHTML = `<i class="fas fa-futbol"></i> 🏃‍♂️ ${facilityType}查詢系統`;
             document.querySelector('.header p').textContent = `查詢全港各區${facilityType}資訊`;
 
             // Process data based on grouping type
@@ -1622,7 +1623,7 @@
 
             data.forEach((item) => {
                 const facility = createFacilityObject(item, facilityType);
-                
+
                 // 使用經緯度座標
                 if (item.Venue_Latitude && item.Venue_Longitude) {
                     facility.latDec = parseFloat(item.Venue_Latitude);
@@ -1637,7 +1638,7 @@
                 // 簡化分組邏輯：只使用2層分組
                 const district = item.District_Name_TC || '未分類';
                 const venue = item.Venue_Name_TC || '未分類';
-                
+
                 // 組合設施類型和位置作為設施名稱的一部分
                 const facilityTypeName = item.Facility_Type_Name_TC || '';
                 const location = item.Facility_Location_Name_TC || '';
@@ -1688,7 +1689,7 @@
                 // 簡化分組邏輯：只使用2層分組
                 const region = props.Region_Ch || '未分類';
                 const trailName = props.C_NAME || '未分類';
-                
+
                 // 組合路段名稱和難度作為設施名稱的一部分
                 const section = props.Trail_name_Ch || '';
                 const difficulty = props.Difficult_Ch || '';
@@ -1937,7 +1938,7 @@
                 'Remarks_cn': '備註',
                 'Facilities_b5': '設施',
                 'No__of_Squash_Courts_TC': '壁球場數量',
-                
+
                 // 羽毛球場屬性
                 'Venue_Address_TC': '場地地址',
                 'Venue_Address_EN': '場地地址(英文)',
@@ -1946,7 +1947,7 @@
                 'Session_Start_Time': '開始時間',
                 'Session_End_Time': '結束時間',
                 'Available_Courts': '可用場數',
-                
+
                 // 遠足徑屬性
                 'Section_No': '路段編號',
                 'Trail_ID': '遠足徑ID',
@@ -1958,7 +1959,7 @@
                 'Webpage_En': '網頁(英文)',
                 'Webpage_Ch': '網頁',
                 'Shape_Length': '長度(米)',
-                
+
                 // 燒烤區屬性
                 'FacilityTypeTC': '設施類型',
                 'FacilityDetailsTC': '設施詳情',
@@ -2421,9 +2422,10 @@
 
             let validMarkersCount = 0;
 
-            // 如果當前是遠足徑，創建線條圖層
+            // 如果當前是遠足徑，只創建標記，不創建線條圖層（預設不顯示路線）
             if (currentFacilityType === '遠足徑') {
-                createHikingTrailsLayer();
+                // 不創建任何遠足徑路線線條，只在點擊時創建
+                // 所有遠足徑標記仍會顯示
             }
 
             // 為所有設施創建標記
@@ -2454,7 +2456,7 @@
                 // Create marker with color based on facility type
                 const markerColor = getFacilityColor(facility.type);
                 const marker = L.circleMarker([lat, lon], {
-                    radius: currentFacilityType === '遠足徑' ? 6 : 8,
+                    radius: currentFacilityType === '遠足徑' ? 0 : 8,
                     fillColor: markerColor,
                     color: darkenColor(markerColor),
                     weight: 2,
@@ -2493,64 +2495,94 @@
             console.log(`Created ${validMarkersCount} markers out of ${allFacilities.length} facilities`);
         }
 
-        // Create hiking trails as lines on the map
-        function createHikingTrailsLayer() {
+        // 創建單一遠足徑路線
+        function createHikingTrailForFacility(facility) {
+            // 清除之前的遠足徑圖層
             if (hikingTrailsLayer) {
                 map.removeLayer(hikingTrailsLayer);
+                hikingTrailsLayer = null;
             }
 
+            // 創建新的圖層組
             hikingTrailsLayer = L.layerGroup().addTo(map);
 
-            allHikingTrails.forEach(trail => {
-                if (trail.geometry && trail.geometry.type === 'MultiLineString' && trail.geometry.coordinates) {
-                    // 創建多線段
-                    const polyline = L.polyline([], {
-                        color: '#5bc0de',
-                        weight: 3,
-                        opacity: 0.7,
-                        smoothFactor: 1
-                    }).addTo(hikingTrailsLayer);;
+            if (facility.geometry && facility.geometry.type === 'MultiLineString' && facility.geometry.coordinates) {
+                // 創建多線段路線
+                const polyline = L.polyline([], {
+                    color: '#5bc0de',
+                    weight: 4,
+                    opacity: 0.9,
+                    smoothFactor: 1
+                });
 
-                    // 將MultiLineString的座標轉換為Polyline可用的格式
-                    trail.geometry.coordinates.forEach(lineString => {
-                        const latlngs = lineString.map(coord => [coord[1], coord[0]]);
-                        polyline.setLatLngs(latlngs);
-                    });
+                // 將MultiLineString的座標轉換為Polyline可用的格式
+                let allCoordinates = [];
+                facility.geometry.coordinates.forEach(lineString => {
+                    const latlngs = lineString.map(coord => [coord[1], coord[0]]);
+                    polyline.setLatLngs(latlngs);
+                    allCoordinates = allCoordinates.concat(latlngs);
+                });
 
-                    // Create popup content
-                    let popupContent = createPopupContent(trail);
+                // 添加到圖層組
+                polyline.addTo(hikingTrailsLayer);
 
-                    polyline.bindPopup(popupContent, {
-                        maxWidth: 300,
-                        minWidth: 200
-                    });
+                // 創建起點標記（第一個座標點）
+                if (allCoordinates.length > 0) {
+                    const startPoint = allCoordinates[0];
+                    const startMarker = L.marker(startPoint, {
+                        icon: L.divIcon({
+                            className: 'custom-div-icon',
+                            html: '<div style="background-color:#5cb85c;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);">起</div>',
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 12]
+                        })
+                    }).bindPopup(`<b>起點</b><br>${facility.details['起點'] || '未標明起點'}`);
 
-                    // Add click event
-                    polyline.on('click', function (e) {
-                        // Find and highlight the corresponding facility
-                        const facility = allFacilities.find(f => f.id === trail.id);
-                        if (facility) {
-                            selectFacility(facility);
+                    startMarker.addTo(hikingTrailsLayer);
+                }
 
-                            // Find and highlight the corresponding list item
-                            document.querySelectorAll('.facility-item').forEach(item => {
-                                item.classList.remove('active');
-                                if (item.dataset.facilityId === trail.id) {
-                                    item.classList.add('active');
-                                    item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // 創建終點標記（最後一個座標點）
+                if (allCoordinates.length > 1) {
+                    const endPoint = allCoordinates[allCoordinates.length - 1];
+                    const endMarker = L.marker(endPoint, {
+                        icon: L.divIcon({
+                            className: 'custom-div-icon',
+                            html: '<div style="background-color:#d9534f;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);">終</div>',
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 12]
+                        })
+                    }).bindPopup(`<b>終點</b><br>${facility.details['終點'] || '未標明終點'}`);
 
-                                    // Expand parent accordions
-                                    expandParentAccordions(item);
-                                }
-                            });
+                    endMarker.addTo(hikingTrailsLayer);
+                }
+
+                // 創建彈出視窗內容
+                let popupContent = createPopupContent(facility);
+
+                polyline.bindPopup(popupContent, {
+                    maxWidth: 300,
+                    minWidth: 200
+                });
+
+                // 為線條添加點擊事件
+                polyline.on('click', function (e) {
+                    selectFacility(facility);
+
+                    // 找到並高亮對應的列表項目
+                    document.querySelectorAll('.facility-item').forEach(item => {
+                        item.classList.remove('active');
+                        if (item.dataset.facilityId === facility.id) {
+                            item.classList.add('active');
+                            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                            // 展開父級手風琴
+                            expandParentAccordions(item);
                         }
                     });
+                });
 
-                    hikingTrailsLayer.addLayer(polyline);
-                }
-            });
-
-            console.log(`Created ${allHikingTrails.length} hiking trail lines`);
+                console.log(`Created hiking trail with start and end points for: ${facility.name}`);
+            }
         }
 
         // Get color for facility type
@@ -2586,13 +2618,23 @@
         // Create popup content for facility
         function createPopupContent(facility) {
             let content = `
-                <div style="font-weight: bold; margin-bottom: 8px; color: #2c3e50; font-size: 1.1em">${facility.name}</div>
-                <div style="margin-bottom: 5px;"><strong>設施類型:</strong> ${facility.type}</div>
-            `;
+        <div style="font-weight: bold; margin-bottom: 8px; color: #2c3e50; font-size: 1.1em">${facility.name}</div>
+        <div style="margin-bottom: 5px;"><strong>設施類型:</strong> ${facility.type}</div>
+    `;
+
+            // 如果是遠足徑，特別顯示起點和終點
+            if (facility.type === '遠足徑') {
+                content += `
+            <div style="margin-bottom: 5px; background-color: #f8f9fa; padding: 5px; border-radius: 3px;">
+                <strong style="color: #5cb85c;">起點:</strong> ${facility.details['起點'] || '未標明'}<br>
+                <strong style="color: #d9534f;">終點:</strong> ${facility.details['終點'] || '未標明'}
+            </div>
+        `;
+            }
 
             // Add all details
             for (const [key, value] of Object.entries(facility.details)) {
-                if (value && value !== 'N.A.' && value !== 'null' && value !== 'undefined') {
+                if (value && value !== 'N.A.' && value !== 'null' && value !== 'undefined' && key !== '起點' && key !== '終點') {
                     const cleanValue = String(value).replace(/<br\/>/g, '<br>').replace(/<br>/g, '<br>').replace(/\r\n/g, '<br>');
                     content += `<div style="margin-bottom: 3px;"><strong>${key}:</strong> ${cleanValue}</div>`;
                 }
@@ -2639,7 +2681,31 @@
                 selectedFacility = null;
             }
 
-            // Get coordinates
+            // 如果是遠足徑，清除之前顯示的路線並創建新的
+            if (currentFacilityType === '遠足徑') {
+                // 清除之前的遠足徑路線
+                if (hikingTrailsLayer) {
+                    map.removeLayer(hikingTrailsLayer);
+                    hikingTrailsLayer = null;
+                }
+
+                // 創建新的遠足徑路線（包含起點和終點）
+                if (facility.geometry) {
+                    createHikingTrailForFacility(facility);
+                }
+
+                // 更新當前遠足徑ID
+                currentTrailId = facility.id;
+            } else {
+                // 如果不是遠足徑，清除任何遠足徑圖層
+                if (hikingTrailsLayer) {
+                    map.removeLayer(hikingTrailsLayer);
+                    hikingTrailsLayer = null;
+                    currentTrailId = null;
+                }
+            }
+
+            // Get coordinates (使用線段的中間點作為標記位置)
             let lat, lon;
 
             if (facility.latDec && facility.lonDec) {
@@ -2650,36 +2716,58 @@
                 lon = convertDMSToDD(facility.longitude);
             }
 
+            // 對於遠足徑，如果沒有座標，嘗試從幾何數據中獲取中間點
+            if (currentFacilityType === '遠足徑' && (!lat || !lon || isNaN(lat) || isNaN(lon))) {
+                if (facility.geometry && facility.geometry.coordinates) {
+                    const coords = facility.geometry.coordinates;
+                    if (coords[0] && Array.isArray(coords[0]) && coords[0][0] && Array.isArray(coords[0][0])) {
+                        // 取線段中間的點
+                        const midIndex = Math.floor(coords[0].length / 2);
+                        if (coords[0][midIndex] && Array.isArray(coords[0][midIndex]) && coords[0][midIndex].length >= 2) {
+                            lon = coords[0][midIndex][0];
+                            lat = coords[0][midIndex][1];
+                        }
+                    }
+                }
+            }
+
             if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
                 console.error('Invalid coordinates for facility:', facility);
-                showNotification('無法在地圖上顯示此設施（座標無效）');
+                showNotification('❌ 無法在地圖上顯示此設施（座標無效）');
                 return;
             }
 
-            // Create highlighted marker
-            selectedFacility = L.circleMarker([lat, lon], {
-                radius: 12,
-                fillColor: '#ffcc00',
-                color: '#ff9900',
-                weight: 3,
-                opacity: 1,
-                fillOpacity: 0.9
-            });
+            // 對於遠足徑，我們仍然創建一個標記（但可以選擇隱藏）
+            if (currentFacilityType !== '遠足徑') {
+                // Create highlighted marker for non-hiking facilities
+                selectedFacility = L.circleMarker([lat, lon], {
+                    radius: 12,
+                    fillColor: '#ffcc00',
+                    color: '#ff9900',
+                    weight: 3,
+                    opacity: 1,
+                    fillOpacity: 0.9
+                });
 
-            // Create detailed popup content
-            let popupContent = createPopupContent(facility);
+                // Create detailed popup content
+                let popupContent = createPopupContent(facility);
 
-            // Bind and open popup
-            selectedFacility.bindPopup(popupContent, {
-                maxWidth: 300,
-                minWidth: 200
-            }).openPopup();
+                // Bind and open popup
+                selectedFacility.bindPopup(popupContent, {
+                    maxWidth: 300,
+                    minWidth: 200
+                }).openPopup();
+
+                // Add to map
+                selectedFacility.addTo(map);
+            }
 
             // Pan to the selected facility
+            // 對於遠足徑，使用較小的縮放級別以顯示完整路線
             map.setView([lat, lon], currentFacilityType === '遠足徑' ? 13 : 16);
 
             // Show notification
-            showNotification(`已選取: ${facility.name} (${facility.type})`);
+            showNotification(`✅ 已選取: ${facility.name} (${facility.type})`);
         }
 
         // Filter facilities based on search input
